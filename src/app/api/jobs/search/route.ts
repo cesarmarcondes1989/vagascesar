@@ -19,7 +19,10 @@ export async function POST(req: Request) {
 
   try {
     const profile = await getProfile(supabase, user.id);
-    const { jobs: raws, demo, queries } = await searchJobs(prefs.roles, prefs.regions, prefs.cities);
+    const { jobs: raws, demo, queries, errors, broadened } = await searchJobs(prefs.roles, prefs.regions, prefs.cities);
+    if (raws.length === 0 && errors.length > 0) {
+      return NextResponse.json({ error: `O SerpAPI recusou a busca: ${errors[0]}` }, { status: 502 });
+    }
 
     // Source filter happens before the (paid) AI step.
     const bySource = raws.filter((r) => !prefs.sources?.length || prefs.sources.includes(r.source));
@@ -45,7 +48,7 @@ export async function POST(req: Request) {
       .filter((j) => !prefs.modes?.length || prefs.modes.includes(j.mode))
       .sort((a, b) => b.match - a.match);
 
-    return NextResponse.json({ jobs, demo, queries, found: raws.length });
+    return NextResponse.json({ jobs, demo, queries, found: raws.length, broadened, afterSource: bySource.length });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }

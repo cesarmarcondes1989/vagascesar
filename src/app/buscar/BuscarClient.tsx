@@ -24,7 +24,7 @@ export function BuscarClient({ roles: initialRoles, prefs, savedMap }: Props) {
   const [modes, setModes] = useState<string[]>(prefs?.modes?.length ? prefs.modes : [...MODES]);
 
   const [jobs, setJobs] = useState<StructuredJob[] | null>(null);
-  const [meta, setMeta] = useState<{ demo: boolean; queries: number; found: number } | null>(null);
+  const [meta, setMeta] = useState<{ demo: boolean; queries: number; found: number; broadened: boolean; afterSource: number } | null>(null);
   const [selected, setSelected] = useState<string>("");
   const [busy, setBusy] = useState<"" | "search" | "save">("");
   const [error, setError] = useState("");
@@ -56,7 +56,7 @@ export function BuscarClient({ roles: initialRoles, prefs, savedMap }: Props) {
     setBusy("");
     if (!res.ok) return setError(data.error ?? "Falha na busca");
     setJobs(data.jobs);
-    setMeta({ demo: data.demo, queries: data.queries, found: data.found });
+    setMeta({ demo: data.demo, queries: data.queries, found: data.found, broadened: data.broadened, afterSource: data.afterSource });
     setSelected(data.jobs[0]?.external_id ?? "");
   }
 
@@ -215,7 +215,9 @@ export function BuscarClient({ roles: initialRoles, prefs, savedMap }: Props) {
             <p className="m-0 text-base text-muted">
               {meta?.demo
                 ? "Modo demo: SERPAPI_KEY não configurada, então estas são vagas de exemplo. A IA estruturou e avaliou de verdade."
-                : `${meta?.found ?? 0} anúncios encontrados em ${meta?.queries} buscas. Ordenadas por aderência.`}
+                : `${meta?.found ?? 0} anúncios encontrados em ${meta?.queries} consultas${meta?.broadened ? " (ampliei os termos: a busca exata não trouxe nada)" : ""}${
+                    meta && meta.found > meta.afterSource ? ` · ${meta.found - meta.afterSource} descartados pelo filtro de fontes` : ""
+                  }. Ordenadas por aderência.`}
             </p>
           </div>
 

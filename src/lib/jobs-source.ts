@@ -36,10 +36,45 @@ export function detectSource(via: string, applyTitles: string[]) {
   return hit ?? "Outras";
 }
 
+const stripAccents = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+/** "Head de Serviços Digitais / Pós-venda" → "Head de Serviços Digitais"; drops "(empresa média)". */
+export function cleanRole(role: string) {
+  return role
+    .replace(/\(.*?\)/g, "")
+    .split(/[/·|]/)[0]
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Broader fallback: "Diretor(a) de Transformação Digital" → "Transformação Digital". */
+export function coreRole(role: string) {
+  const c = cleanRole(role).replace(/\(a\)/gi, "");
+  const stripped = c.replace(
+    /^(head|diretor[a]?|gerente( s[eê]nior)?|coordenador[a]?|superintendente|chief|l[ií]der|vp|vice[- ]presidente)\s+(de|do|da|of)?\s*/i,
+    "",
+  );
+  return stripped.length >= 4 ? stripped : c;
+}
+
+/** SerpAPI canonical location, e.g. "Sao Jose dos Campos, State of Sao Paulo, Brazil". */
+export function serpLocation(city: string) {
+  return `${stripAccents(city)}, State of Sao Paulo, Brazil`;
+}
+
 /** Builds the role × place queries, capped to protect the API quota. */
-export function buildQueries(roles: string[], places: Place[]) {
+export function buildQueries(roles: string[], places: Place[], broad = false) {
   const queries: { q: string; place: Place }[] = [];
-  for (const role of roles) for (const place of places) queries.push({ q: `${role} ${place.label} SP`, place });
+  const seen = new Set<string>();
+  for (const role of roles) {
+    const q = broad ? coreRole(role) : cleanRole(role);
+    for (const place of places) {
+      const key = `${q}|${place.label}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      queries.push({ q, place });
+    }
+  }
   return queries.slice(0, MAX_QUERIES_PER_SEARCH);
 }
 
@@ -56,18 +91,29 @@ type SerpJob = {
   share_link?: string;
 };
 
-export async function searchJobs(roles: string[], regions: string[], cities: string[]) {
-  const places = buildPlaces(regions, cities);
-  const queries = buildQueries(roles, places);
-  const key = process.env.SERPAPI_KEY;
-  if (!key) return { jobs: demoJobs(regions, cities), demo: true, queries: queries.length };
+const NO_RESULTS = /hasn't returned any results|no results/i;
 
+async function runQueries(queries: { q: string; place: Place }[], key: string) {
+  const errors: string[] = [];
   const results = await Promise.all(
     queries.map(async ({ q, place }) => {
-      const url = `https://serpapi.com/search.json?engine=google_jobs&q=${encodeURIComponent(q)}&gl=br&hl=pt&api_key=${key}`;
-      const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) return [] as RawJob[];
-      const data = (await res.json()) as { jobs_results?: SerpJob[] };
+      const params = new URLSearchParams({
+        engine: "google_jobs",
+        q,
+        location: serpLocation(place.label),
+        google_domain: "google.com.br",
+        gl: "br",
+        api_key: key,
+      });
+      let data: { jobs_results?: SerpJob[]; error?: string };
+      try {
+        const res = await fetch(`https://serpapi.com/search.json?${params}`, { cache: "no-store" });
+        data = await res.json();
+        if (!res.ok && !data.error) data.error = `HTTP ${res.status}`;
+      } catch (e) {
+        data = { error: (e as Error).message };
+      }
+      if (data.error && !NO_RESULTS.test(data.error)) errors.push(`"${q}" em ${place.label}: ${data.error}`);
       return (data.jobs_results ?? []).map<RawJob>((j) => {
         const via = (j.via ?? "").replace(/^via\s+/i, "");
         const applyTitles = (j.apply_options ?? []).map((a) => a.title);
@@ -88,10 +134,34 @@ export async function searchJobs(roles: string[], regions: string[], cities: str
       });
     }),
   );
+  return { jobs: results.flat(), errors };
+}
+
+export async function searchJobs(roles: string[], regions: string[], cities: string[]) {
+  const places = buildPlaces(regions, cities);
+  const queries = buildQueries(roles, places);
+  const key = process.env.SERPAPI_KEY;
+  if (!key) return { jobs: demoJobs(regions, cities), demo: true, queries: queries.length, errors: [] as string[], broadened: false };
+
+  let { jobs, errors } = await runQueries(queries, key);
+  let used = queries.length;
+  let broadened = false;
+
+  // Nothing found and no hard errors (bad key, quota): retry once with broader terms.
+  if (jobs.length === 0 && errors.length === 0) {
+    const broad = buildQueries(roles, places, true).filter((b) => !queries.some((q) => q.q === b.q && q.place.label === b.place.label)).slice(0, 4);
+    if (broad.length) {
+      const second = await runQueries(broad, key);
+      jobs = second.jobs;
+      errors = second.errors;
+      used += broad.length;
+      broadened = true;
+    }
+  }
 
   const seen = new Set<string>();
-  const jobs = results.flat().filter((j) => (seen.has(j.externalId) ? false : (seen.add(j.externalId), true)));
-  return { jobs, demo: false, queries: queries.length };
+  const unique = jobs.filter((j) => (seen.has(j.externalId) ? false : (seen.add(j.externalId), true)));
+  return { jobs: unique, demo: false, queries: used, errors, broadened };
 }
 
 /** Sample listings used while SERPAPI_KEY is not configured, so the whole flow can be tested. */
