@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Radar de Vagas</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=Space+Grotesk:wght@500;700&amp;display=swap">
+<style>
+body{margin:0;background:#F3F6FB}
+*{box-sizing:border-box}
+a{color:#1D4ED8}a:hover{color:#1E3A8A}
+.disp{font-family:'Space Grotesk',sans-serif}
+.mono{font-family:'IBM Plex Mono',monospace}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 20px;border-radius:10px;border:1px solid #1D4ED8;background:#1D4ED8;color:#FFFFFF;font:600 15px/1 'IBM Plex Sans',sans-serif;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{background:#1E40AF;border-color:#1E40AF;color:#FFFFFF}
+.btn.ghost{background:transparent;color:#0F1E3D}
+.btn.ghost:hover{background:#E2E8F2;color:#0F1E3D;border-color:#1D4ED8}
+.btn.sm{min-height:40px;padding:0 14px;font-size:14px}
+.nav{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #4B6BC0;background:transparent;color:#DCE6FA;font:500 14px/1 'IBM Plex Sans',sans-serif;cursor:pointer}
+.nav:hover{border-color:#DCE6FA}
+.nav.on{background:#F3F6FB;color:#0F1E3D;border-color:#F3F6FB}
+.chip{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #C2CDDF;background:#FFFFFF;color:#0F1E3D;font:500 14px/1.2 'IBM Plex Sans',sans-serif;cursor:pointer}
+.chip:hover{border-color:#1D4ED8}
+.chip.on{background:#1D4ED8;border-color:#1D4ED8;color:#FFFFFF}
+.role{flex:1 1 300px;display:flex;gap:14px;align-items:flex-start;padding:18px;border:1px solid #D6DEEB;border-radius:14px;background:#FFFFFF;cursor:pointer}
+.role:hover{border-color:#1D4ED8}
+.role.on{border-color:#1D4ED8;box-shadow:inset 0 0 0 1px #1D4ED8;background:#EFF4FF}
+.jobcard{width:100%;text-align:left;display:flex;gap:14px;align-items:flex-start;padding:16px;border:1px solid #D6DEEB;border-radius:14px;background:#FFFFFF;color:#0F1E3D;font:400 14px/1.4 'IBM Plex Sans',sans-serif;cursor:pointer}
+.jobcard:hover{border-color:#1D4ED8}
+.jobcard.on{border-color:#1D4ED8;box-shadow:inset 0 0 0 1px #1D4ED8}
+.tab{min-height:44px;padding:0 18px;border:0;border-bottom:3px solid transparent;background:transparent;color:#4A5875;font:600 15px/1 'IBM Plex Sans',sans-serif;cursor:pointer}
+.tab:hover{color:#0F1E3D}
+.tab.on{color:#0F1E3D;border-bottom-color:#E8590C}
+.step{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;border:1px dashed #AEBBD1;color:#56647F;font:500 13px/1 'IBM Plex Sans',sans-serif;white-space:nowrap}
+.step.done{border:1px solid #1D4ED8;color:#1D4ED8;background:#EFF4FF}
+.step.now{border:1px solid #1D4ED8;background:#1D4ED8;color:#FFFFFF}
+.step.stop{border:1px solid #B5400A;background:#FFE8DC;color:#8A2E07}
+.kw{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;background:#E0EAFF;color:#1E3A8A;font:500 13px/1.2 'IBM Plex Sans',sans-serif}
+.kw.ia{background:#FFE8DC;color:#8A2E07}
+.dot{width:12px;height:12px;border-radius:50%;background:#1D4ED8;flex:none;margin-top:5px}
+.dot.rep{background:#E8590C}
+.dot.ok{background:#1D4ED8}
+.opt{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid #D6DEEB;border-radius:12px;background:#FAFBF9}
+.opt.on{border-color:#1D4ED8;box-shadow:inset 0 0 0 1px #1D4ED8;background:#EFF4FF}
+.field{width:100%;border:1px solid #C2CDDF;border-radius:10px;padding:12px 14px;font:400 15px/1.5 'IBM Plex Sans',sans-serif;background:#FFFFFF;color:#0F1E3D}
+.lbl{font:600 14px/1.3 'IBM Plex Sans',sans-serif;color:#0F1E3D}
+.muted{color:#4A5875}
+.card{background:#FFFFFF;border:1px solid #D6DEEB;border-radius:18px;padding:24px}
+ul.clean{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:15px;line-height:1.45}
+input[type=checkbox]{width:20px;height:20px;margin:2px 0 0;accent-color:#1D4ED8;flex:none}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-within{outline:3px solid #E8590C;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height:100vh;background:#F3F6FB;color:#0F1E3D;font-family:'IBM Plex Sans',sans-serif">
+
+<header style="background:#1E3A8A;color:#F3F6FB">
+<div style="max-width:1280px;margin:0 auto;padding:18px 24px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 28px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span class="disp" style="font-size:28px;font-weight:700;letter-spacing:-0.02em">RADAR<span style="color:#FF7A45">.</span></span>
+<span style="font-size:14px;color:#C9D6F2">Pare de mandar currículo no escuro.</span>
+</div>
+<nav aria-label="Etapas do fluxo" style="display:flex;flex-wrap:wrap;gap:6px;flex:1 1 auto">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="5">
+<button type="button" class="nav {{n.cls}}" onClick="{{n.go}}"><span class="mono" style="font-size:12px;opacity:0.8">{{n.n}}</span>{{n.label}}</button>
+</sc-for>
+</nav>
+<span class="mono" style="font-size:12px;color:#C9D6F2;display:inline-flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#7DD3FC"></span>supabase · protótipo</span>
+</div>
+</header>
+
+<main style="max-width:1280px;margin:0 auto;padding:36px 24px 120px">
+
+<!-- 1 · PERFIL -->
+<sc-if value="{{isPerfil}}" hint-placeholder-val="{{true}}">
+<section style="display:flex;flex-direction:column;gap:28px">
+<div style="display:flex;flex-direction:column;gap:10px;max-width:780px">
+<span class="mono" style="font-size:13px;color:#1D4ED8;letter-spacing:0.08em">ETAPA 1 · PERFIL</span>
+<h1 class="disp" style="margin:0;font-size:44px;line-height:1.05;letter-spacing:-0.02em">Quem você é, numa tela só. O resto é trabalho da IA.</h1>
+<p class="muted" style="margin:0;font-size:17px;line-height:1.5">Suba o CV, descreva em texto livre, ou os dois. A IA cruza tudo e propõe cargos, inclusive alguns que você não teria buscado sozinho.</p>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:20px;align-items:stretch">
+<div class="card" style="flex:1 1 340px;display:flex;flex-direction:column;gap:16px">
+<h2 class="disp" style="margin:0;font-size:20px">CV atual (PDF)</h2>
+<sc-if value="{{noCv}}" hint-placeholder-val="{{true}}">
+<div style="flex:1;min-height:220px;border:2px dashed #AEBBD1;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center">
+<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M12 17v-6"></path><path d="M9.5 13.5 12 11l2.5 2.5"></path></svg>
+<span style="font-size:15px">Arraste o PDF aqui</span>
+<button type="button" class="btn ghost sm" onClick="{{pickCv}}">Escolher arquivo</button>
+</div>
+</sc-if>
+<sc-if value="{{hasCv}}" hint-placeholder-val="{{false}}">
+<div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;background:#EFF4FF;border:1px solid #C7D7FE">
+<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="m9 15 2 2 4-4"></path></svg>
+<div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0">
+<span class="mono" style="font-size:14px">{{cvFile}}</span>
+<span class="muted" style="font-size:13px">Lido pela IA · competências extraídas abaixo</span>
+</div>
+<button type="button" class="btn ghost sm" onClick="{{removeCv}}">Trocar</button>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<span class="lbl">O que a IA tirou do seu CV</span>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{extracted}}" as="x" hint-placeholder-count="6"><span class="kw">{{x.t}}</span></sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+<div class="card" style="flex:999 1 560px;display:flex;flex-direction:column;gap:18px">
+<h2 class="disp" style="margin:0;font-size:20px">Em texto livre</h2>
+<div style="display:flex;flex-direction:column;gap:8px">
+<label class="lbl" for="desc">Descreva você, o que quer e o que não aceita mais</label>
+<textarea id="desc" class="field" rows="6" value="{{desc}}" onChange="{{onDesc}}"></textarea>
+<span class="muted" style="font-size:13px">Dica: diga o que te cansa no cargo atual. A IA usa isso pra filtrar, não só o que você sabe fazer.</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<span class="lbl">Senioridade alvo</span>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{levels}}" as="l" hint-placeholder-count="4"><button type="button" class="chip {{l.cls}}" aria-pressed="{{l.on}}" onClick="{{l.toggle}}">{{l.label}}</button></sc-for>
+</div>
+</div>
+</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px">
+<button type="button" class="btn" onClick="{{genRoles}}">{{genLabel}}</button>
+<span class="mono muted" style="font-size:13px">usa: CV + texto + senioridade → propõe cargos</span>
+</div>
+</section>
+</sc-if>
+
+<!-- 2 · CARGOS & REGIÃO -->
+<sc-if value="{{isCargos}}" hint-placeholder-val="{{false}}">
+<section style="display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:10px;max-width:780px">
+<span class="mono" style="font-size:13px;color:#1D4ED8;letter-spacing:0.08em">ETAPA 2 · O QUE E ONDE</span>
+<h1 class="disp" style="margin:0;font-size:44px;line-height:1.05;letter-spacing:-0.02em">A IA leu você. Agora escolha onde apostar.</h1>
+<p class="muted" style="margin:0;font-size:17px;line-height:1.5">Marque quantos cargos quiser. O percentual é aderência ao seu perfil, não promessa de vaga.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<h2 class="disp" style="margin:0;font-size:22px">Cargos sugeridos</h2>
+<div style="display:flex;flex-wrap:wrap;gap:12px">
+<sc-for list="{{roles}}" as="r" hint-placeholder-count="6">
+<label class="role {{r.cls}}">
+<input type="checkbox" checked="{{r.checked}}" onChange="{{r.toggle}}">
+<span style="display:flex;flex-direction:column;gap:6px;min-width:0;flex:1">
+<span style="display:flex;justify-content:space-between;gap:12px;align-items:baseline">
+<span style="font-weight:600;font-size:16px;line-height:1.3">{{r.title}}</span>
+<span class="mono" style="font-size:13px;color:#1D4ED8;white-space:nowrap">{{r.matchTxt}}</span>
+</span>
+<span class="muted" style="font-size:14px;line-height:1.45">{{r.why}}</span>
+<sc-if value="{{r.wild}}" hint-placeholder-val="{{false}}"><span class="mono" style="align-self:flex-start;font-size:11px;letter-spacing:0.06em;padding:4px 8px;border-radius:6px;background:#FFE8DC;color:#8A2E07">APOSTA OUSADA</span></sc-if>
+</span>
+</label>
+</sc-for>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;max-width:640px">
+<input class="field" style="flex:1 1 280px" aria-label="Sugerir outro cargo" placeholder="Faltou algum? Ex.: Head de Inovação" value="{{customRole}}" onChange="{{onCustomRole}}">
+<button type="button" class="btn ghost" onClick="{{addRole}}">Adicionar cargo</button>
+</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:20px">
+<div class="card" style="flex:999 1 560px;display:flex;flex-direction:column;gap:14px">
+<h2 class="disp" style="margin:0;font-size:20px">Regiões do estado de SP</h2>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{regions}}" as="g" hint-placeholder-count="7"><button type="button" class="chip {{g.cls}}" aria-pressed="{{g.on}}" onClick="{{g.toggle}}">{{g.label}}</button></sc-for>
+</div>
+</div>
+<div class="card" style="flex:1 1 340px;display:flex;flex-direction:column;gap:14px">
+<h2 class="disp" style="margin:0;font-size:20px">Ou por cidade</h2>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<input class="field" style="flex:1 1 180px" aria-label="Cidade" placeholder="Ex.: Jundiaí" value="{{cityDraft}}" onChange="{{onCity}}" onKeyDown="{{onCityKey}}">
+<button type="button" class="btn ghost" onClick="{{addCity}}">Incluir</button>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{cities}}" as="c" hint-placeholder-count="0"><button type="button" class="chip on" aria-label="Remover {{c.name}}" onClick="{{c.remove}}">{{c.name}} <span aria-hidden="true">×</span></button></sc-for>
+</div>
+</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:20px">
+<div class="card" style="flex:999 1 560px;display:flex;flex-direction:column;gap:14px">
+<h2 class="disp" style="margin:0;font-size:20px">Fontes</h2>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{sources}}" as="o" hint-placeholder-count="7"><button type="button" class="chip {{o.cls}}" aria-pressed="{{o.on}}" onClick="{{o.toggle}}">{{o.label}}</button></sc-for>
+</div>
+</div>
+<div class="card" style="flex:1 1 340px;display:flex;flex-direction:column;gap:14px">
+<h2 class="disp" style="margin:0;font-size:20px">Modelo de trabalho</h2>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{modes}}" as="m" hint-placeholder-count="3"><button type="button" class="chip {{m.cls}}" aria-pressed="{{m.on}}" onClick="{{m.toggle}}">{{m.label}}</button></sc-for>
+</div>
+</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px;border-radius:16px;background:#1E3A8A;color:#F3F6FB">
+<span class="mono" style="font-size:14px">{{filterSummary}}</span>
+<button type="button" class="btn" style="background:#F3F6FB;color:#0F1E3D;border-color:#F3F6FB" onClick="{{search}}">{{searchLabel}}</button>
+</div>
+</section>
+</sc-if>
+
+<!-- 3 · VAGAS -->
+<sc-if value="{{isVagas}}" hint-placeholder-val="{{false}}">
+<section style="display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px">
+<div style="display:flex;flex-direction:column;gap:10px;max-width:780px">
+<span class="mono" style="font-size:13px;color:#1D4ED8;letter-spacing:0.08em">ETAPA 3 · VAGAS</span>
+<h1 class="disp" style="margin:0;font-size:44px;line-height:1.05;letter-spacing:-0.02em">{{jobsTitle}}</h1>
+<p class="muted" style="margin:0;font-size:16px;line-height:1.5">{{jobsSub}}</p>
+</div>
+<button type="button" class="btn ghost" onClick="{{goCargos}}">Ajustar filtros</button>
+</div>
+<sc-if value="{{noJobs}}" hint-placeholder-val="{{false}}">
+<div class="card" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+<h2 class="disp" style="margin:0;font-size:22px">Nada com esses filtros.</h2>
+<p class="muted" style="margin:0;font-size:15px">Abra mais regiões, inclua uma cidade ou marque outro cargo. Filtro apertado demais é só outro jeito de não achar nada.</p>
+<button type="button" class="btn" onClick="{{goCargos}}">Voltar aos filtros</button>
+</div>
+</sc-if>
+<sc-if value="{{hasJobs}}" hint-placeholder-val="{{true}}">
+<div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+<div style="flex:1 1 360px;display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{jobs}}" as="j" hint-placeholder-count="5">
+<button type="button" class="jobcard {{j.cls}}" onClick="{{j.pick}}">
+<span class="mono" style="flex:none;width:52px;height:52px;border-radius:12px;background:#E0EAFF;color:#1E3A8A;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500">{{j.match}}%</span>
+<span style="display:flex;flex-direction:column;gap:4px;min-width:0;flex:1">
+<span style="font-weight:600;font-size:15px">{{j.title}}</span>
+<span class="muted" style="font-size:14px">{{j.company}} · {{j.city}}</span>
+<span class="mono muted" style="font-size:12px">{{j.source}} · {{j.mode}} · {{j.posted}}</span>
+<sc-if value="{{j.isSaved}}" hint-placeholder-val="{{false}}"><span class="mono" style="align-self:flex-start;margin-top:4px;font-size:11px;letter-spacing:0.06em;padding:4px 8px;border-radius:6px;background:#1D4ED8;color:#FFFFFF">NO PIPELINE</span></sc-if>
+</span>
+</button>
+</sc-for>
+</div>
+<article class="card" style="flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:22px;padding:28px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<span class="mono" style="font-size:12px;color:#1D4ED8;letter-spacing:0.06em">{{jd.sourceTag}}</span>
+<h2 class="disp" style="margin:0;font-size:32px;line-height:1.1;letter-spacing:-0.01em">{{jd.title}}</h2>
+<p style="margin:0;font-size:16px">{{jd.company}} · {{jd.city}} ({{jd.regionLabel}}) · {{jd.mode}}</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
+<span class="mono" style="font-size:12px;padding:6px 10px;border-radius:8px;background:#EDF1F8">Salário: {{jd.salary}}</span>
+<span class="mono" style="font-size:12px;padding:6px 10px;border-radius:8px;background:#EDF1F8">Publicada {{jd.posted}}</span>
+<span class="mono" style="font-size:12px;padding:6px 10px;border-radius:8px;background:#EDF1F8">{{jd.applicants}}</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;justify-content:space-between;font-size:14px"><span class="lbl">Aderência ao seu perfil</span><span class="mono">{{jd.match}}%</span></div>
+<div style="height:8px;border-radius:99px;background:#E2E8F2;overflow:hidden"><div style="height:8px;border-radius:99px;background:#1D4ED8;width:{{jd.match}}%"></div></div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:10px">
+<sc-if value="{{jd.notSaved}}" hint-placeholder-val="{{true}}"><button type="button" class="btn" onClick="{{jd.save}}">Salvar e iniciar candidatura</button></sc-if>
+<sc-if value="{{jd.isSaved}}" hint-placeholder-val="{{false}}"><button type="button" class="btn" onClick="{{jd.open}}">Abrir candidatura</button></sc-if>
+<a class="btn ghost" href="{{jd.url}}" target="_blank" rel="noopener">Ver vaga original ↗</a>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 class="lbl" style="margin:0;font-size:16px">Resumo</h3>
+<p style="margin:0;font-size:15px;line-height:1.55">{{jd.summary}}</p>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:22px 28px">
+<div style="flex:1 1 260px;display:flex;flex-direction:column;gap:8px"><h3 class="lbl" style="margin:0;font-size:16px">Responsabilidades</h3><ul class="clean"><sc-for list="{{jd.resp}}" as="x" hint-placeholder-count="4"><li>{{x.t}}</li></sc-for></ul></div>
+<div style="flex:1 1 260px;display:flex;flex-direction:column;gap:8px"><h3 class="lbl" style="margin:0;font-size:16px">Requisitos</h3><ul class="clean"><sc-for list="{{jd.req}}" as="x" hint-placeholder-count="4"><li>{{x.t}}</li></sc-for></ul></div>
+<div style="flex:1 1 260px;display:flex;flex-direction:column;gap:8px"><h3 class="lbl" style="margin:0;font-size:16px">Diferenciais</h3><ul class="clean"><sc-for list="{{jd.dif}}" as="x" hint-placeholder-count="2"><li>{{x.t}}</li></sc-for></ul></div>
+<div style="flex:1 1 260px;display:flex;flex-direction:column;gap:8px"><h3 class="lbl" style="margin:0;font-size:16px">Benefícios</h3><ul class="clean"><sc-for list="{{jd.benef}}" as="x" hint-placeholder-count="3"><li>{{x.t}}</li></sc-for></ul></div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:16px;padding:20px;border-radius:14px;background:#EFF4FF;border:1px solid #C7D7FE">
+<div style="flex:1 1 240px;display:flex;flex-direction:column;gap:8px"><span class="mono" style="font-size:12px;letter-spacing:0.06em;color:#1E3A8A">LEITURA DA IA · ONDE VOCÊ BRILHA</span><ul class="clean"><sc-for list="{{jd.strengths}}" as="x" hint-placeholder-count="2"><li>{{x.t}}</li></sc-for></ul></div>
+<div style="flex:1 1 240px;display:flex;flex-direction:column;gap:8px"><span class="mono" style="font-size:12px;letter-spacing:0.06em;color:#8A2E07">ONDE VÃO TE APERTAR</span><ul class="clean"><sc-for list="{{jd.gaps}}" as="x" hint-placeholder-count="2"><li>{{x.t}}</li></sc-for></ul></div>
+</div>
+<span class="mono muted" style="font-size:12px">ao salvar → insert em jobs + applications (status = salva)</span>
+</article>
+</div>
+</sc-if>
+</section>
+</sc-if>
+
+<!-- 4 · CANDIDATURA -->
+<sc-if value="{{isCand}}" hint-placeholder-val="{{false}}">
+<section style="display:flex;flex-direction:column;gap:22px">
+<sc-if value="{{noActive}}" hint-placeholder-val="{{false}}">
+<div class="card" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+<h1 class="disp" style="margin:0;font-size:32px">Nenhuma candidatura aberta.</h1>
+<p class="muted" style="margin:0;font-size:15px">Salve uma vaga na busca ou abra uma pelo pipeline.</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn" onClick="{{goVagas}}">Ver vagas</button><button type="button" class="btn ghost" onClick="{{goPipe}}">Abrir pipeline</button></div>
+</div>
+</sc-if>
+<sc-if value="{{hasActive}}" hint-placeholder-val="{{true}}">
+<div class="card" style="display:flex;flex-direction:column;gap:18px;padding:28px">
+<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:16px">
+<div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+<span class="mono" style="font-size:13px;color:#1D4ED8;letter-spacing:0.08em">ETAPA 4 · CANDIDATURA</span>
+<h1 class="disp" style="margin:0;font-size:36px;line-height:1.08;letter-spacing:-0.02em">{{aj.title}}</h1>
+<p style="margin:0;font-size:16px">{{aj.company}} · {{aj.city}} · via {{aj.source}}</p>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+<span class="mono" style="font-size:13px;padding:8px 12px;border-radius:999px;background:#1D4ED8;color:#FFFFFF">{{aj.stageLabel}}</span>
+<a class="btn" href="{{aj.url}}" target="_blank" rel="noopener">Me cadastrar na vaga ↗</a>
+<sc-if value="{{canMarkApplied}}" hint-placeholder-val="{{false}}"><button type="button" class="btn ghost" onClick="{{markApplied}}">Já me cadastrei</button></sc-if>
+</div>
+</div>
+<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">
+<sc-for list="{{flow}}" as="f" hint-placeholder-count="8"><span class="step {{f.cls}}"><span class="mono" style="font-size:11px">{{f.n}}</span>{{f.label}}</span></sc-for>
+</div>
+<sc-if value="{{isRejected}}" hint-placeholder-val="{{false}}">
+<div style="padding:14px 16px;border-radius:12px;background:#FFE8DC;color:#8A2E07;font-size:15px">Encerrada como reprovada. Os aprendizados estão em Status &amp; histórico e já alimentam o match das próximas vagas.</div>
+</sc-if>
+</div>
+<div role="tablist" aria-label="Seções da candidatura" style="display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid #D6DEEB">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="3"><button type="button" role="tab" aria-selected="{{t.on}}" class="tab {{t.cls}}" onClick="{{t.go}}">{{t.label}}</button></sc-for>
+</div>
+
+<sc-if value="{{tabCv}}" hint-placeholder-val="{{true}}">
+<div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+<div style="flex:999 1 600px;min-width:0;background:#FFFFFF;border:1px solid #D6DEEB;border-radius:6px;padding:44px 48px;display:flex;flex-direction:column;gap:22px;box-shadow:0 1px 0 #D6DEEB">
+<div style="display:flex;flex-direction:column;gap:6px;border-bottom:2px solid #1D4ED8;padding-bottom:16px">
+<span class="disp" style="font-size:30px;font-weight:700">[Seu nome]</span>
+<span style="font-size:16px;font-weight:600;color:#1D4ED8">{{aj.headline}}</span>
+<span class="mono muted" style="font-size:12px">[cidade] · [e-mail] · [linkedin] · versão para {{aj.company}}</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<span class="mono" style="font-size:12px;letter-spacing:0.08em">RESUMO</span>
+<p style="margin:0;font-size:15px;line-height:1.6">{{aj.cvSummary}}</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<span class="mono" style="font-size:12px;letter-spacing:0.08em">COMPETÊNCIAS-CHAVE</span>
+<p style="margin:0;font-size:15px;line-height:1.6">{{aj.kwLine}}</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<span class="mono" style="font-size:12px;letter-spacing:0.08em">EXPERIÊNCIA</span>
+<span style="font-weight:600;font-size:15px">[Cargo atual] · [Empresa] · [período]</span>
+<ul class="clean">
+<sc-for list="{{cvBullets}}" as="b" hint-placeholder-count="3"><li>{{b.t}}</li></sc-for>
+<sc-for list="{{cvExtras}}" as="b" hint-placeholder-count="0"><li style="background:#EFF4FF;border-radius:6px;padding:2px 6px">{{b.t}}</li></sc-for>
+</ul>
+<span style="font-weight:600;font-size:15px;margin-top:6px">[Cargo anterior] · [Empresa] · [período]</span>
+<ul class="clean"><li>[2–3 bullets que a IA puxa do seu CV original]</li></ul>
+</div>
+</div>
+<aside style="flex:1 1 320px;display:flex;flex-direction:column;gap:16px">
+<div class="card" style="display:flex;flex-direction:column;gap:10px">
+<span class="lbl">Aderência estimada</span>
+<span class="disp" style="font-size:48px;font-weight:700;line-height:1">{{aj.match}}%</span>
+<div style="height:8px;border-radius:99px;background:#E2E8F2;overflow:hidden"><div style="height:8px;border-radius:99px;background:#1D4ED8;width:{{aj.match}}%"></div></div>
+<span class="muted" style="font-size:13px">Sobe conforme você preenche os [colchetes] e manda respostas do copiloto pro CV.</span>
+</div>
+<div class="card" style="display:flex;flex-direction:column;gap:12px">
+<span class="lbl">Palavras-chave da vaga</span>
+<div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{keywords}}" as="k" hint-placeholder-count="8"><span class="kw {{k.cls}}">{{k.t}}</span></sc-for></div>
+<span class="muted" style="font-size:13px"><span class="kw" style="padding:2px 6px">verde</span> já estava no seu CV · <span class="kw ia" style="padding:2px 6px">laranja</span> a IA incluiu</span>
+</div>
+<div class="card" style="display:flex;flex-direction:column;gap:10px">
+<span class="lbl">Os [colchetes] só você preenche</span>
+<p class="muted" style="margin:0;font-size:14px;line-height:1.5">Número, tamanho de time, receita. Conte no copiloto e mande a melhor versão pro CV.</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" onClick="{{goChat}}">Abrir copiloto</button><button type="button" class="btn ghost sm" onClick="{{exportCv}}">Exportar PDF</button></div>
+</div>
+</aside>
+</div>
+</sc-if>
+
+<sc-if value="{{tabChat}}" hint-placeholder-val="{{false}}">
+<div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+<div class="card" style="flex:999 1 600px;min-width:0;display:flex;flex-direction:column;gap:16px;padding:20px">
+<div style="display:flex;flex-direction:column;gap:14px;max-height:620px;overflow-y:auto;padding:4px">
+<sc-for list="{{msgs}}" as="m" hint-placeholder-count="2">
+<sc-if value="{{m.isMe}}" hint-placeholder-val="{{false}}">
+<div style="align-self:flex-end;max-width:80%;background:#1D4ED8;color:#FFFFFF;padding:12px 16px;border-radius:16px 16px 4px 16px;font-size:15px;line-height:1.5;white-space:pre-line">{{m.text}}</div>
+</sc-if>
+<sc-if value="{{m.isAi}}" hint-placeholder-val="{{true}}">
+<div style="align-self:flex-start;max-width:92%;display:flex;flex-direction:column;gap:10px">
+<span class="mono" style="font-size:11px;letter-spacing:0.08em;color:#1D4ED8">COPILOTO</span>
+<div style="background:#EDF1F8;padding:12px 16px;border-radius:4px 16px 16px 16px;font-size:15px;line-height:1.5;white-space:pre-line">{{m.text}}</div>
+<sc-if value="{{m.hasOptions}}" hint-placeholder-val="{{false}}">
+<div style="display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{m.options}}" as="o" hint-placeholder-count="3">
+<div class="opt {{o.cls}}">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="mono" style="font-size:12px;letter-spacing:0.06em">{{o.label}}</span><sc-if value="{{o.chosen}}" hint-placeholder-val="{{false}}"><span class="mono" style="font-size:11px;color:#1E3A8A">ESCOLHIDA</span></sc-if></div>
+<p style="margin:0;font-size:15px;line-height:1.55">{{o.text}}</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button type="button" class="btn ghost sm" onClick="{{o.choose}}">Essa é a minha</button>
+<sc-if value="{{o.canCv}}" hint-placeholder-val="{{true}}"><button type="button" class="btn ghost sm" onClick="{{o.useCv}}">Mandar pro CV</button></sc-if>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-if>
+</sc-for>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{quick}}" as="q" hint-placeholder-count="4"><button type="button" class="chip" onClick="{{q.use}}">{{q.t}}</button></sc-for>
+</div>
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<input class="field" style="flex:1 1 320px" aria-label="Mensagem para o copiloto" placeholder="Conta um resultado, cola uma pergunta do recrutador…" value="{{chatDraft}}" onChange="{{onChat}}" onKeyDown="{{onChatKey}}">
+<button type="button" class="btn" onClick="{{sendChat}}">Enviar</button>
+</div>
+</div>
+<aside class="card" style="flex:1 1 300px;display:flex;flex-direction:column;gap:14px">
+<span class="lbl">O que o copiloto está levando em conta</span>
+<div style="display:flex;flex-direction:column;gap:6px"><span class="mono" style="font-size:12px;letter-spacing:0.06em;color:#1D4ED8">REQUISITOS DA VAGA</span><ul class="clean" style="font-size:14px"><sc-for list="{{aj.req}}" as="x" hint-placeholder-count="3"><li>{{x.t}}</li></sc-for></ul></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span class="mono" style="font-size:12px;letter-spacing:0.06em;color:#8A2E07">ONDE VÃO TE APERTAR</span><ul class="clean" style="font-size:14px"><sc-for list="{{aj.gaps}}" as="x" hint-placeholder-count="2"><li>{{x.t}}</li></sc-for></ul></div>
+<span class="mono muted" style="font-size:12px">+ seu CV · + histórico desta candidatura · {{extrasCount}} respostas já no CV</span>
+</aside>
+</div>
+</sc-if>
+
+<sc-if value="{{tabStatus}}" hint-placeholder-val="{{false}}">
+<div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+<div class="card" style="flex:1 1 400px;display:flex;flex-direction:column;gap:18px">
+<h2 class="disp" style="margin:0;font-size:22px">Registrar atualização</h2>
+<div style="display:flex;flex-direction:column;gap:10px">
+<span class="lbl">Fase</span>
+<div style="display:flex;flex-wrap:wrap;gap:8px"><sc-for list="{{stageChips}}" as="c" hint-placeholder-count="10"><button type="button" class="chip {{c.cls}}" aria-pressed="{{c.on}}" onClick="{{c.pick}}">{{c.label}}</button></sc-for></div>
+</div>
+<sc-if value="{{isOutraDraft}}" hint-placeholder-val="{{false}}">
+<div style="display:flex;flex-direction:column;gap:8px"><label class="lbl" for="customStage">Nome da fase</label><input id="customStage" class="field" placeholder="Ex.: Fase 3 · dinâmica com diretores" value="{{customStage}}" onChange="{{onCustomStage}}"></div>
+</sc-if>
+<div style="display:flex;flex-direction:column;gap:8px"><label class="lbl" for="dt">Data</label><input id="dt" type="date" class="field" style="max-width:220px" value="{{dateDraft}}" onChange="{{onDate}}"></div>
+<div style="display:flex;flex-direction:column;gap:8px"><label class="lbl" for="note">O que aconteceu?</label><textarea id="note" class="field" rows="3" placeholder="Quem estava, o que perguntaram, como você saiu." value="{{noteDraft}}" onChange="{{onNote}}"></textarea></div>
+<sc-if value="{{isRepDraft}}" hint-placeholder-val="{{false}}">
+<div style="display:flex;flex-direction:column;gap:8px;padding:16px;border-radius:12px;background:#FFF4EE;border:1px solid #F5C7AE">
+<label class="lbl" for="reason">Justificativa da reprovação</label>
+<textarea id="reason" class="field" rows="3" placeholder="O que disseram, ou o que você acha que pesou. Seja honesto: isso é pra você." value="{{reasonDraft}}" onChange="{{onReason}}"></textarea>
+<span style="font-size:13px;color:#8A2E07">A IA transforma isso em ajustes concretos pra próxima.</span>
+</div>
+</sc-if>
+<button type="button" class="btn" style="align-self:flex-start" onClick="{{register}}">Registrar</button>
+</div>
+<div class="card" style="flex:999 1 520px;min-width:0;display:flex;flex-direction:column;gap:18px">
+<h2 class="disp" style="margin:0;font-size:22px">Histórico</h2>
+<sc-for list="{{timeline}}" as="t" hint-placeholder-count="3">
+<div style="display:flex;gap:14px;align-items:flex-start;padding-bottom:16px;border-bottom:1px solid #E2E8F2">
+<span class="dot {{t.dotCls}}"></span>
+<div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0">
+<span style="font-size:15px"><span class="mono muted" style="font-size:13px">{{t.dateTxt}}</span> · <strong>{{t.label}}</strong></span>
+<sc-if value="{{t.hasNote}}" hint-placeholder-val="{{true}}"><span class="muted" style="font-size:14px;line-height:1.5">{{t.note}}</span></sc-if>
+<sc-if value="{{t.hasReason}}" hint-placeholder-val="{{false}}">
+<div style="padding:12px 14px;border-radius:10px;background:#FFF4EE;font-size:14px;line-height:1.5"><span class="mono" style="font-size:11px;letter-spacing:0.06em;color:#8A2E07">JUSTIFICATIVA</span><br>{{t.reason}}</div>
+</sc-if>
+<sc-if value="{{t.hasLessons}}" hint-placeholder-val="{{false}}">
+<div style="padding:12px 14px;border-radius:10px;background:#EFF4FF;display:flex;flex-direction:column;gap:6px"><span class="mono" style="font-size:11px;letter-spacing:0.06em;color:#1E3A8A">APRENDIZADOS DA IA PRA PRÓXIMA</span><ul class="clean" style="font-size:14px"><sc-for list="{{t.lessons}}" as="l" hint-placeholder-count="3"><li>{{l.t}}</li></sc-for></ul></div>
+</sc-if>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</sc-if>
+</section>
+</sc-if>
+
+<!-- PIPELINE -->
+<sc-if value="{{isPipe}}" hint-placeholder-val="{{false}}">
+<section style="display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<span class="mono" style="font-size:13px;color:#1D4ED8;letter-spacing:0.08em">MINHAS VAGAS · INSCRITAS E EM ANDAMENTO</span>
+<h1 class="disp" style="margin:0;font-size:44px;line-height:1.05;letter-spacing:-0.02em">{{pipeTitle}}</h1>
+</div>
+<button type="button" class="btn" onClick="{{goPerfil}}">Buscar novas vagas →</button>
+</div>
+<div style="overflow-x:auto;padding-bottom:6px">
+<div style="display:grid;grid-template-columns:repeat(5, minmax(220px, 1fr));gap:12px">
+<sc-for list="{{cols}}" as="c" hint-placeholder-count="5">
+<div style="background:#E5EBF5;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:260px">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 4px 6px"><span class="lbl">{{c.label}}</span><span class="mono" style="font-size:13px">{{c.count}}</span></div>
+<sc-for list="{{c.items}}" as="it" hint-placeholder-count="1">
+<button type="button" class="jobcard" style="flex-direction:column;gap:6px;padding:14px" onClick="{{it.open}}">
+<span style="font-weight:600;font-size:14px">{{it.title}}</span>
+<span class="muted" style="font-size:13px">{{it.company}} · {{it.city}}</span>
+<span class="mono" style="font-size:12px;color:#1D4ED8">{{it.stageLabel}} · {{it.dateTxt}}</span>
+</button>
+</sc-for>
+<sc-if value="{{c.empty}}" hint-placeholder-val="{{false}}"><span class="muted" style="font-size:13px;padding:4px">vazio</span></sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+<div class="card" style="display:flex;flex-direction:column;gap:16px">
+<h2 class="disp" style="margin:0;font-size:22px">O que as reprovações estão te dizendo</h2>
+<p class="muted" style="margin:0;font-size:15px;line-height:1.5;max-width:860px">{{pattern}}</p>
+<sc-for list="{{rejections}}" as="r" hint-placeholder-count="1">
+<div style="display:flex;flex-wrap:wrap;gap:16px;padding-top:14px;border-top:1px solid #E2E8F2">
+<div style="flex:1 1 260px;display:flex;flex-direction:column;gap:6px"><span style="font-weight:600">{{r.title}} · {{r.company}}</span><span style="font-size:14px;line-height:1.5;color:#8A2E07">{{r.reason}}</span></div>
+<ul class="clean" style="flex:2 1 360px;font-size:14px"><sc-for list="{{r.lessons}}" as="l" hint-placeholder-count="3"><li>{{l.t}}</li></sc-for></ul>
+</div>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+</main>
+
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{false}}">
+<div role="status" style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1E3A8A;color:#FFFFFF;padding:14px 20px;border-radius:12px;font-size:14px;display:flex;gap:12px;align-items:center;max-width:calc(100% - 32px);box-shadow:0 8px 24px rgba(30,58,138,0.25)"><span class="mono" style="color:#7DD3FC">supabase</span>{{toast}}</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+var DESC = 'Lidero produtos digitais, dados/IA e suporte ao cliente numa unidade de serviços com P&L próprio, com time interno e uma base grande de fornecedores. Quero o próximo passo com mais escopo de negócio, de preferência no interior de SP. Não quero mais: papel só de TI, sem dono de resultado.';
+
+var EXTRACTED = ['Portfólio de produtos digitais','Dados & IA','Serviços B2B / MRO','Suporte ao cliente','Gestão de fornecedores','Liderança de times híbridos'];
+
+var ROLES = [
+  { id: 'r1', title: 'Head de Produtos Digitais', match: 94, why: 'Seu escopo atual: portfólio digital B2B dentro de um P&L.', checked: true, wild: false },
+  { id: 'r2', title: 'Diretor(a) de Transformação Digital', match: 89, why: 'Você já faz a ponte entre negócio, dados e tecnologia.', checked: true, wild: false },
+  { id: 'r4', title: 'Head de Serviços Digitais / Pós-venda', match: 86, why: 'MRO e suporte ao cliente são pós-venda com outro nome.', checked: true, wild: false },
+  { id: 'r3', title: 'Head de Dados & IA', match: 82, why: 'Dados e IA estão no seu escopo; aqui viram o escopo inteiro.', checked: false, wild: false },
+  { id: 'r5', title: 'Chief Digital Officer (empresa média)', match: 71, why: 'C-level fora de multinacional: menos estrutura, mais caneta.', checked: false, wild: true },
+  { id: 'r6', title: 'Gerente Sênior de Produto · Plataformas', match: 68, why: 'Passo lateral e mais mão na massa. Só vale se for pra trocar de setor.', checked: false, wild: true }
+];
+
+var REGIONS = [
+  { id: 'campinas', label: 'RM Campinas' },
+  { id: 'sorocaba', label: 'RM Sorocaba' },
+  { id: 'vale', label: 'Vale do Paraíba (SJC)' },
+  { id: 'jundiai', label: 'Jundiaí' },
+  { id: 'grandesp', label: 'Grande São Paulo' },
+  { id: 'piracicaba', label: 'Piracicaba' },
+  { id: 'baixada', label: 'Baixada Santista' }
+];
+
+var SOURCES = ['LinkedIn', 'Gupy', 'Indeed', 'Glassdoor', 'Catho', 'Vagas.com', 'InfoJobs'];
+var MODES = ['Presencial', 'Híbrido', 'Remoto'];
+var LEVELS = ['Gerência', 'Head', 'Diretoria', 'C-level'];
+
+var JOBS = [
+  { id: 'j1', title: 'Head de Produtos Digitais', company: 'Vetor Aeroespacial', city: 'São José dos Campos', region: 'vale', mode: 'Híbrido', source: 'LinkedIn', posted: 'há 2 dias', applicants: 'menos de 50 candidatos', salary: 'não divulgado', match: 92, roles: ['r1', 'r5'],
+    summary: 'Liderar o portfólio de produtos digitais para clientes de aviação, do discovery à monetização, com times de produto, design e engenharia.',
+    resp: ['Definir visão e roadmap do portfólio digital B2B', 'Responder pelo P&L dos produtos digitais e metas de receita recorrente', 'Liderar PMs, designers e squads com parceiros externos', 'Transformar dados operacionais da frota em novos serviços'],
+    req: ['10+ anos em produto digital, 5+ liderando líderes', 'Vivência em B2B industrial ou aeroespacial', 'Modelos de receita recorrente (SaaS, assinatura)', 'Inglês fluente'],
+    dif: ['Experiência com MRO ou pós-venda', 'IA generativa aplicada a operações'],
+    benef: ['Bônus anual', 'Saúde e odontológico', 'Previdência privada', 'Híbrido 3x por semana'],
+    keywords: ['Roadmap de portfólio', 'P&L de produto', 'B2B SaaS', 'Discovery', 'Aviação', 'Dados de frota', 'Liderança de líderes', 'IA generativa'],
+    strengths: ['Seu escopo atual junta produto, dados e suporte: raro numa pessoa só', 'Vivência direta com aviação e MRO'],
+    gaps: ['Vão querer números de receita recorrente: tenha 2 prontos', 'Liderar líderes: mostre a estrutura do seu time'],
+    headline: 'Executivo de Produtos Digitais · Aviação · Dados & IA', focus: 'monetização de serviços digitais em aviação', url: 'https://www.linkedin.com/jobs/' },
+  { id: 'j2', title: 'Diretor(a) de Transformação Digital', company: 'Orbe Energia', city: 'Campinas', region: 'campinas', mode: 'Híbrido', source: 'Gupy', posted: 'há 5 dias', applicants: 'mais de 200 candidatos', salary: 'não divulgado', match: 88, roles: ['r2', 'r5'],
+    summary: 'Conduzir a agenda de transformação digital de uma geradora e distribuidora em expansão, com foco em dados, automação e novos modelos de serviço.',
+    resp: ['Montar e executar o plano diretor de transformação digital', 'Criar o escritório de dados & IA', 'Levar decisões de investimento à diretoria e ao conselho', 'Gerir orçamento e fornecedores estratégicos'],
+    req: ['Liderança de transformação em indústria regulada', 'Governança de dados e de portfólio de investimentos', 'Gestão de mudança com áreas operacionais', 'Inglês avançado'],
+    dif: ['Setor elétrico ou utilities', 'MBA ou pós em gestão'],
+    benef: ['PLR', 'Saúde sem coparticipação', 'Auxílio mobilidade', 'Gympass'],
+    keywords: ['Transformação digital', 'Governança de dados', 'Gestão de mudança', 'Business case', 'Conselho', 'Automação', 'Orçamento', 'Fornecedores'],
+    strengths: ['Você já opera dentro de uma unidade com P&L próprio', 'Histórico de traduzir negócio para tecnologia e vice-versa'],
+    gaps: ['Sem vivência no setor elétrico: prepare a ponte “ativo crítico é ativo crítico”', 'Conselho: tenha um investimento que você defendeu e aprovou'],
+    headline: 'Líder de Transformação Digital · Dados, IA e Serviços', focus: 'transformação digital com impacto operacional', url: 'https://portal.gupy.io/' },
+  { id: 'j3', title: 'Head de Dados & IA', company: 'Nimbus Saúde', city: 'Sorocaba', region: 'sorocaba', mode: 'Presencial', source: 'Indeed', posted: 'há 1 dia', applicants: 'menos de 25 candidatos', salary: 'não divulgado', match: 81, roles: ['r3'],
+    summary: 'Estruturar a área de dados e IA de uma rede hospitalar regional: plataforma, governança, casos de uso clínicos e operacionais.',
+    resp: ['Montar time e plataforma de dados do zero', 'Priorizar casos de uso de IA com retorno mensurável', 'Garantir LGPD e governança de dados sensíveis', 'Fazer a ponte entre corpo clínico, operação e TI'],
+    req: ['Liderança de times de dados (engenharia, ciência, analytics)', 'Cloud (AWS ou Azure)', 'Modelos em produção, não só PoC', 'Comunicação com alta gestão'],
+    dif: ['Saúde ou setor regulado', 'IA generativa em atendimento'],
+    benef: ['Plano de saúde da própria rede', 'Bônus por metas', 'Refeitório no local'],
+    keywords: ['Plataforma de dados', 'MLOps', 'LGPD', 'AWS', 'Casos de uso de IA', 'Governança', 'Analytics', 'Time de dados'],
+    strengths: ['Você já toca dados e IA dentro de um P&L de serviços', 'Experiência com parceria de cloud'],
+    gaps: ['Presencial em Sorocaba: decida antes se topa', 'Saúde é setor novo: leve um caso com dado sensível'],
+    headline: 'Head de Dados & IA · Do caso de uso ao resultado', focus: 'dados e IA em produção', url: 'https://br.indeed.com/' },
+  { id: 'j4', title: 'Head de Serviços Digitais & Pós-venda', company: 'Ferro & Faísca Manufatura', city: 'Jundiaí', region: 'jundiai', mode: 'Híbrido', source: 'Catho', posted: 'há 3 semanas', applicants: 'cerca de 80 candidatos', salary: 'não divulgado', match: 85, roles: ['r4'],
+    summary: 'Transformar o pós-venda de equipamentos industriais numa linha de serviços digitais: monitoramento remoto, manutenção preditiva e portal do cliente.',
+    resp: ['Criar a linha de serviços digitais de pós-venda', 'Lançar portal do cliente e monitoramento remoto', 'Desenhar a precificação de contratos de serviço', 'Liderar suporte técnico e customer success'],
+    req: ['Experiência em pós-venda ou serviços industriais', 'Produtos conectados / IoT', 'Modelos de contrato de serviço', 'Liderança de times técnicos'],
+    dif: ['Manutenção preditiva', 'Experiência internacional'],
+    benef: ['Bônus', 'Saúde e odonto', 'Previdência', 'Fretado'],
+    keywords: ['Pós-venda', 'Serviços digitais', 'Manutenção preditiva', 'Portal do cliente', 'Customer success', 'Contratos de serviço', 'IoT', 'Suporte técnico'],
+    strengths: ['MRO é exatamente pós-venda com outro nome', 'Você já lidera suporte ao cliente'],
+    gaps: ['Precificação de contrato: leve um exemplo concreto', 'IoT: mostre o que você já fez com dado de equipamento'],
+    headline: 'Executivo de Serviços Digitais & Pós-venda · MRO · Dados', focus: 'serviços digitais de pós-venda', url: 'https://www.catho.com.br/' },
+  { id: 'j5', title: 'Gerente Sênior de Produto · Plataformas B2B', company: 'Hidra Logística', city: 'Hortolândia', region: 'campinas', mode: 'Remoto', source: 'Vagas.com', posted: 'há 4 dias', applicants: 'mais de 300 candidatos', salary: 'não divulgado', match: 74, roles: ['r6', 'r1'],
+    summary: 'Dono do produto da plataforma B2B que conecta embarcadores e transportadoras, com foco em retenção e expansão de contas.',
+    resp: ['Gerir o roadmap da plataforma B2B', 'Aumentar retenção e expansão de contas', 'Liderar 3 squads com PMs', 'Trabalhar colado em vendas e CS'],
+    req: ['Product management em B2B SaaS', 'Métricas de produto (NRR, churn, adoção)', 'Discovery contínuo', 'Autonomia com dados'],
+    dif: ['Logística', 'Marketplace'],
+    benef: ['Remoto', 'Stock options', 'Auxílio home office'],
+    keywords: ['Product management', 'NRR', 'Churn', 'Discovery', 'B2B SaaS', 'Squads', 'Adoção', 'Marketplace'],
+    strengths: ['Senioridade acima do pedido: você negocia de cima', 'Visão de portfólio B2B'],
+    gaps: ['É passo lateral: tenha claro o porquê', 'Vão testar hands-on em métricas de produto'],
+    headline: 'Líder de Produto B2B · Plataformas e Dados', focus: 'retenção e expansão em plataforma B2B', url: 'https://www.vagas.com.br/' },
+  { id: 'j6', title: 'Diretor(a) de Customer Experience Digital', company: 'Taquari Agro', city: 'Itu', region: 'sorocaba', mode: 'Híbrido', source: 'InfoJobs', posted: 'há 6 dias', applicants: 'cerca de 60 candidatos', salary: 'não divulgado', match: 70, roles: ['r4', 'r2'],
+    summary: 'Redesenhar a jornada digital de produtores e revendas: canais, atendimento, dados de cliente e serviços conectados.',
+    resp: ['Desenhar a jornada omnicanal do cliente', 'Liderar atendimento e CX digital', 'Lançar app e serviços conectados para produtores', 'Medir NPS e custo de servir'],
+    req: ['Liderança de CX ou atendimento em B2B', 'Produtos digitais para cliente final', 'Gestão de indicadores de experiência', 'Disponibilidade para viagens'],
+    dif: ['Agronegócio', 'CRM e automação de atendimento'],
+    benef: ['Bônus', 'Saúde', 'Carro', 'PLR'],
+    keywords: ['Customer experience', 'Jornada do cliente', 'NPS', 'Atendimento', 'CRM', 'Omnicanal', 'Custo de servir', 'App'],
+    strengths: ['Você lidera customer support dentro do seu escopo', 'Itu: deslocamento curto no eixo Sorocaba–Campinas'],
+    gaps: ['Agro é novo: estude o ciclo de safra antes da entrevista', 'Viagens frequentes: veja se cabe na sua rotina'],
+    headline: 'Executivo de Customer Experience Digital · B2B', focus: 'experiência digital do cliente', url: 'https://www.infojobs.com.br/' },
+  { id: 'j7', title: 'Head de Inovação Digital', company: 'Lumen Seguros', city: 'Campinas', region: 'campinas', mode: 'Híbrido', source: 'Glassdoor', posted: 'há 1 mês', applicants: 'mais de 150 candidatos', salary: 'não divulgado', match: 77, roles: ['r2'],
+    summary: 'Liderar o laboratório de inovação: novos produtos digitais, parcerias com insurtechs e experimentação rápida.',
+    resp: ['Rodar o pipeline de experimentos', 'Fechar parcerias com startups', 'Lançar produtos digitais de seguro', 'Reportar à presidência'],
+    req: ['Inovação em B2C', 'Experimentação e growth', 'Parcerias com startups', 'Setor financeiro ou seguros'],
+    dif: ['Insurtech', 'Venture building'],
+    benef: ['Bônus', 'Saúde', 'Previdência'],
+    keywords: ['Inovação', 'Experimentação', 'Growth', 'B2C', 'Insurtech', 'Parcerias', 'Venture building', 'Produto digital'],
+    strengths: ['Já criou produto novo dentro de corporação grande'],
+    gaps: ['B2C e seguros: sem ponte, pesa contra'],
+    headline: 'Líder de Inovação Digital · Novos Produtos', focus: 'inovação e novos produtos', url: 'https://www.glassdoor.com.br/' },
+  { id: 'j8', title: 'Head de Produto Digital', company: 'Alto Vale Mobilidade', city: 'Taubaté', region: 'vale', mode: 'Híbrido', source: 'Gupy', posted: 'há 9 dias', applicants: 'cerca de 40 candidatos', salary: 'não divulgado', match: 79, roles: ['r1'],
+    summary: 'Liderar o produto digital de uma fabricante de ônibus e veículos elétricos: telemetria, gestão de frota e serviços para operadores.',
+    resp: ['Roadmap de telemetria e gestão de frota', 'Monetizar dados de veículos conectados', 'Liderar PMs e UX', 'Parcerias com operadores de transporte'],
+    req: ['Produto digital B2B', 'Dados de ativos / telemetria', 'Modelos de assinatura', 'Liderança de times'],
+    dif: ['Mobilidade elétrica', 'Experiência em fabricante (OEM)'],
+    benef: ['Bônus', 'Saúde', 'Previdência', 'Restaurante'],
+    keywords: ['Telemetria', 'Gestão de frota', 'Veículos conectados', 'Assinatura', 'Roadmap', 'OEM', 'UX', 'Dados de ativos'],
+    strengths: ['Dado de frota é seu dia a dia: muda o veículo, não o problema', 'Você já trabalha dentro de um fabricante'],
+    gaps: ['Prepare um case de monetização de dados'],
+    headline: 'Executivo de Produto Digital · Frota, Dados e Serviços', focus: 'monetização de dados de frota', url: 'https://portal.gupy.io/' }
+];
+
+var FLOW = ['salva', 'aplicada', 'triagem', 'rh', 'gestor', 'case', 'proposta', 'aprovado'];
+var STAGES = [
+  { id: 'salva', label: 'Salva' }, { id: 'aplicada', label: 'Aplicada' }, { id: 'triagem', label: 'Triagem' },
+  { id: 'rh', label: 'Entrevista RH' }, { id: 'gestor', label: 'Entrevista gestor' }, { id: 'case', label: 'Case / painel' },
+  { id: 'outra', label: 'Fase X (outra)' }, { id: 'proposta', label: 'Proposta' }, { id: 'aprovado', label: 'Aprovado' }, { id: 'reprovado', label: 'Reprovado' }
+];
+var COLS = [
+  { id: 'c1', label: 'Salvas', st: ['salva'] },
+  { id: 'c2', label: 'Aplicadas', st: ['aplicada', 'triagem'] },
+  { id: 'c3', label: 'Em entrevistas', st: ['rh', 'gestor', 'case', 'outra'] },
+  { id: 'c4', label: 'Proposta / aprovado', st: ['proposta', 'aprovado'] },
+  { id: 'c5', label: 'Reprovadas', st: ['reprovado'] }
+];
+var QUICK = ['Me faz a pergunta mais difícil dessa vaga', 'Como respondo pretensão salarial?', 'Por que estou saindo do emprego atual?', 'Resume meu maior resultado em 2 linhas'];
+
+function stageLabel(id, custom) {
+  if (id === 'outra' && custom) return custom;
+  var s = STAGES.find(function (x) { return x.id === id; });
+  return s ? s.label : id;
+}
+function fmtDate(d) { if (!d) return ''; var p = d.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+function toT(arr) { return (arr || []).map(function (t) { return { t: t }; }); }
+function lessonsFor(reason, j) {
+  if (!reason) return [
+    'Sem justificativa registrada: peça feedback ao recrutador em até 48h, com uma pergunta específica (“o que faltou pra eu avançar?”).',
+    'Enquanto isso, revise os requisitos de ' + j.company + ' que você não cobriu com exemplo concreto.',
+    'A IA reduz o peso de vagas parecidas até você registrar um motivo.'
+  ];
+  var short = reason.length > 90 ? reason.slice(0, 90) + '…' : reason;
+  return [
+    'Antes de aplicar em vaga parecida, prepare uma resposta direta pra: “' + short + '”.',
+    'Reescreva o resumo do CV na linguagem do setor de ' + j.company + ', não na do seu setor atual.',
+    'Vagas com o mesmo requisito passam a aparecer com alerta e aderência menor até você ter essa ponte pronta.'
+  ];
+}
+
+var SEED = [
+  { jobId: 'j4', stage: 'gestor', custom: '', timeline: [
+    { stage: 'salva', date: '2026-09-22', note: 'Encontrada via Catho.' },
+    { stage: 'aplicada', date: '2026-09-23', note: 'CV sob medida, versão pós-venda.' },
+    { stage: 'rh', date: '2026-10-01', note: 'Conversa boa. Cavaram bastante em contrato de serviço.' },
+    { stage: 'gestor', date: '2026-10-14', note: 'Agendada com o diretor de operações.' }
+  ] },
+  { jobId: 'j2', stage: 'aplicada', custom: '', timeline: [
+    { stage: 'salva', date: '2026-10-05', note: 'Encontrada via Gupy.' },
+    { stage: 'aplicada', date: '2026-10-06', note: 'Aplicada pelo portal Gupy.' }
+  ] },
+  { jobId: 'j7', stage: 'reprovado', custom: '', timeline: [
+    { stage: 'salva', date: '2026-09-08', note: 'Encontrada via Glassdoor.' },
+    { stage: 'aplicada', date: '2026-09-09', note: '' },
+    { stage: 'rh', date: '2026-09-18', note: 'Pediram cases de produto para cliente final.' },
+    { stage: 'reprovado', date: '2026-09-30', note: 'Retorno por e-mail.', reason: 'Buscavam vivência em seguros e B2C; meus cases eram muito B2B industrial.',
+      lessons: ['Traduza cases B2B industriais para a linguagem de cliente final antes de vagas B2C.', 'Tenha um case de experimentação rápida (semanas, não trimestres).', 'Vaga com setor financeiro como requisito: só aplique com a ponte pronta.'] }
+  ] }
+];
+
+class Component extends DCLogic {
+  constructor(...a) {
+    super(...a);
+    var lv = {}; LEVELS.forEach(function (l) { lv[l] = (l === 'Head' || l === 'Diretoria'); });
+    var src = {}; SOURCES.forEach(function (s) { src[s] = true; });
+    var md = {}; MODES.forEach(function (m) { md[m] = true; });
+    this.state = {
+      screen: 'pipe', cvFile: '', desc: DESC, levels: lv, loading: '',
+      roles: ROLES.map(function (r) { return Object.assign({}, r); }), customRole: '',
+      regions: { campinas: true, sorocaba: true, vale: true }, cities: [], cityDraft: '',
+      sources: src, modes: md,
+      selectedJobId: '', saved: SEED, activeId: 'j4', tab: 'cv',
+      chats: {}, chatDraft: '', cvExtras: {},
+      stageDraft: 'case', customStage: '', dateDraft: '2026-10-09', noteDraft: '', reasonDraft: '', toast: ''
+    };
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._l); }
+  flash(msg) { var self = this; this.setState({ toast: msg }); clearTimeout(this._t); this._t = setTimeout(function () { self.setState({ toast: '' }); }, 2800); }
+  later(fn) { clearTimeout(this._l); this._l = setTimeout(fn, 900); }
+  job(id) { return JOBS.find(function (j) { return j.id === id; }); }
+  seedChat(j) {
+    return [{ role: 'ai', text: 'Bora preparar a candidatura pra ' + j.company + '. Eles vão cavar em “' + j.req[0] + '”.\nMe conta um resultado seu nessa linha, com número se tiver. Eu devolvo 3 versões: uma pra entrevista, uma pro CV e uma mais ousada.' }];
+  }
+  reply(j, t) {
+    var low = t.toLowerCase();
+    if (low.indexOf('pretensão') >= 0 || low.indexOf('salarial') >= 0) {
+      return { text: 'Pretensão é negociação, não confissão. Três jeitos de responder:', options: [
+        { label: 'SEGURA', text: 'Quero entender o escopo e o pacote completo antes de cravar número. Com o que conversamos até aqui, trabalho com uma faixa de [R$ A–B] em remuneração total anual.', cv: false },
+        { label: 'ANCORADA NO ESCOPO', text: 'Hoje respondo por [escopo atual]. Pra um papel com ' + j.focus + ', faz sentido algo a partir de [R$ X] total anual, com bônus atrelado a resultado.', cv: false },
+        { label: 'DEVOLVENDO A BOLA', text: 'Qual a faixa aprovada pra posição? Se estivermos na mesma ordem de grandeza, prefiro gastar nosso tempo no desafio.', cv: false }
+      ] };
+    }
+    if (low.indexOf('saindo') >= 0 || low.indexOf('sair') >= 0) {
+      return { text: 'Regra: fale do que você busca, nunca do que você foge.', options: [
+        { label: 'PUXADA, NÃO FUGA', text: 'Não estou fugindo de nada, estou indo atrás de ' + j.focus + '. É exatamente o que a ' + j.company + ' está construindo.', cv: false },
+        { label: 'HONESTA', text: 'Cheguei no limite do que dá pra construir no escopo atual. Quero ser dono de [resultado] de ponta a ponta.', cv: false },
+        { label: 'PROVOCATIVA', text: 'Porque a pergunta mais interessante do meu setor eu já respondi. A de vocês, em ' + j.focus + ', ainda não.', cv: false }
+      ] };
+    }
+    if (low.indexOf('pergunta mais difícil') >= 0) {
+      return { text: 'Pergunta provável: “Me dá um exemplo concreto de ' + j.req[0].toLowerCase() + ". E o que deu errado no caminho?”\nMe responde aqui do seu jeito que eu lapido. Enquanto isso, estruturas que funcionam:", options: [
+        { label: 'STAR CURTO', text: 'Situação [contexto] → Tarefa [meta] → Ação [o que VOCÊ fez] → Resultado [número] → Erro [o que mudou depois].', cv: false },
+        { label: 'ERRO PRIMEIRO', text: 'Começa pelo que deu errado e como você corrigiu. Mostra maturidade antes de mostrar resultado.', cv: false },
+        { label: 'PONTE PRA VAGA', text: 'Termine sempre com: “É o mesmo desafio de ' + j.resp[0].toLowerCase() + ', só que com [diferença].”', cv: false }
+      ] };
+    }
+    if (low.indexOf('maior resultado') >= 0) {
+      return { text: 'Duas linhas, número na frente. Preencha os colchetes:', options: [
+        { label: 'PRO CV', text: 'Gerou [R$ X / Y%] em ' + j.focus + ' ao liderar [time/iniciativa] de [N] pessoas em [prazo].', cv: true },
+        { label: 'PRA ENTREVISTA', text: 'Em [prazo], saímos de [ponto A] pra [ponto B]. O que destravou foi [decisão sua].', cv: false },
+        { label: 'PRO LINKEDIN', text: 'Transformei [ativo existente] em [receita/serviço]. Resultado: [número].', cv: false }
+      ] };
+    }
+    var clean = t.replace(/\.$/, '');
+    return { text: 'Bom material. Três jeitos de usar isso:', options: [
+      { label: 'OBJETIVA · PRO CV', text: clean + '. Resultado: [número]. Conecta direto com “' + j.req[0] + '”.', cv: true },
+      { label: 'STAR · PRA ENTREVISTA', text: 'Situação: [contexto]. Tarefa: [meta]. Ação: ' + clean + '. Resultado: [número]. Ponte: é o mesmo desafio de “' + j.resp[0].toLowerCase() + '”.', cv: false },
+      { label: 'OUSADA', text: 'Vocês vão precisar de ' + j.resp[0].toLowerCase() + '. Eu já fiz isso: ' + clean + '. A pergunta é quão rápido querem chegar lá.', cv: false }
+    ] };
+  }
+  send(text) {
+    var s = this.state; var j = this.job(s.activeId); var t = (text || '').trim();
+    if (!j || !t) return;
+    var cur = s.chats[j.id] || this.seedChat(j);
+    var r = this.reply(j, t);
+    var next = Object.assign({}, s.chats); next[j.id] = cur.concat([{ role: 'me', text: t }, { role: 'ai', text: r.text, options: r.options, chosen: -1 }]);
+    this.setState({ chats: next, chatDraft: '' });
+  }
+  choose(jobId, mi, oi) {
+    var s = this.state; var cur = (s.chats[jobId] || []).slice(); if (!cur[mi]) return;
+    cur[mi] = Object.assign({}, cur[mi], { chosen: oi });
+    var next = Object.assign({}, s.chats); next[jobId] = cur; this.setState({ chats: next });
+  }
+  useCv(jobId, text) {
+    var s = this.state; var ex = s.cvExtras[jobId] || []; if (ex.indexOf(text) >= 0) return;
+    var next = Object.assign({}, s.cvExtras); next[jobId] = ex.concat([text]);
+    this.setState({ cvExtras: next }); this.flash('Bullet adicionado ao CV desta vaga · cv_versions');
+  }
+  addEntry(stage, custom, date, note, reason) {
+    var s = this.state; var a = s.saved.find(function (x) { return x.jobId === s.activeId; }); if (!a) return;
+    var j = this.job(a.jobId); var isRep = stage === 'reprovado';
+    var entry = { stage: stage, custom: custom, date: date, note: note, reason: isRep ? reason : '', lessons: isRep ? lessonsFor(reason, j) : [] };
+    var saved = s.saved.map(function (x) { return x.jobId === a.jobId ? Object.assign({}, x, { stage: stage, custom: custom, timeline: x.timeline.concat([entry]) }) : x; });
+    this.setState({ saved: saved, noteDraft: '', reasonDraft: '', customStage: '' });
+    this.flash('Status: ' + stageLabel(stage, custom) + ' · insert em application_events');
+  }
+  saveJob(j) {
+    var s = this.state;
+    if (!s.saved.some(function (x) { return x.jobId === j.id; })) {
+      var row = { jobId: j.id, stage: 'salva', custom: '', timeline: [{ stage: 'salva', date: '2026-10-09', note: 'Encontrada via ' + j.source + '.' }] };
+      this.setState({ saved: s.saved.concat([row]) });
+      this.flash('Vaga salva · insert em jobs + applications');
+    }
+    this.setState({ activeId: j.id, screen: 'cand', tab: 'cv', stageDraft: 'aplicada' });
+  }
+
+  renderVals() {
+    var self = this; var s = this.state;
+    var set = function (patch) { return function () { self.setState(patch); }; };
+    var val = function (key) { return function (e) { var o = {}; o[key] = e.target.value; self.setState(o); }; };
+
+    var navDefs = [['pipe', String(s.saved.length), 'Minhas vagas'], ['perfil', '1', 'Perfil'], ['cargos', '2', 'Cargos & região'], ['vagas', '3', 'Vagas'], ['cand', '4', 'Candidatura']];
+    var nav = navDefs.map(function (d) { return { n: d[1], label: d[2], cls: s.screen === d[0] ? 'on' : '', go: set({ screen: d[0] }) }; });
+
+    // perfil
+    var levels = LEVELS.map(function (l) { var on = !!s.levels[l]; return { label: l, on: on, cls: on ? 'on' : '', toggle: function () { var n = Object.assign({}, self.state.levels); n[l] = !n[l]; self.setState({ levels: n }); } }; });
+
+    // cargos
+    var roles = s.roles.map(function (r) {
+      return Object.assign({}, r, { cls: r.checked ? 'on' : '', matchTxt: r.match ? r.match + '%' : 'seu',
+        toggle: function () { self.setState({ roles: self.state.roles.map(function (x) { return x.id === r.id ? Object.assign({}, x, { checked: !x.checked }) : x; }) }); } });
+    });
+    var regions = REGIONS.map(function (g) { var on = !!s.regions[g.id]; return { label: g.label, on: on, cls: on ? 'on' : '', toggle: function () { var n = Object.assign({}, self.state.regions); n[g.id] = !n[g.id]; self.setState({ regions: n }); } }; });
+    var addCity = function () { var c = self.state.cityDraft.trim(); if (!c) return; if (self.state.cities.some(function (x) { return x.toLowerCase() === c.toLowerCase(); })) { self.setState({ cityDraft: '' }); return; } self.setState({ cities: self.state.cities.concat([c]), cityDraft: '' }); };
+    var cities = s.cities.map(function (c) { return { name: c, remove: function () { self.setState({ cities: self.state.cities.filter(function (x) { return x !== c; }) }); } }; });
+    var sources = SOURCES.map(function (o) { var on = !!s.sources[o]; return { label: o, on: on, cls: on ? 'on' : '', toggle: function () { var n = Object.assign({}, self.state.sources); n[o] = !n[o]; self.setState({ sources: n }); } }; });
+    var modes = MODES.map(function (m) { var on = !!s.modes[m]; return { label: m, on: on, cls: on ? 'on' : '', toggle: function () { var n = Object.assign({}, self.state.modes); n[m] = !n[m]; self.setState({ modes: n }); } }; });
+    var selRoles = s.roles.filter(function (r) { return r.checked; }).map(function (r) { return r.id; });
+    var nPlaces = REGIONS.filter(function (g) { return s.regions[g.id]; }).length + s.cities.length;
+    var srcOn = SOURCES.filter(function (o) { return s.sources[o]; });
+    var modesOn = MODES.filter(function (m) { return s.modes[m]; });
+    var filterSummary = selRoles.length + ' cargos · ' + nPlaces + ' locais · ' + srcOn.length + ' fontes · ' + (modesOn.join(' / ') || 'nenhum modelo');
+
+    // vagas
+    var cityList = s.cities.map(function (c) { return c.toLowerCase(); });
+    var savedIds = s.saved.map(function (x) { return x.jobId; });
+    var found = JOBS.filter(function (j) {
+      return (s.regions[j.region] || cityList.indexOf(j.city.toLowerCase()) >= 0) && s.sources[j.source] && s.modes[j.mode] && j.roles.some(function (r) { return selRoles.indexOf(r) >= 0; });
+    }).sort(function (a, b) { return b.match - a.match; });
+    var sel = found.find(function (j) { return j.id === s.selectedJobId; }) || found[0] || JOBS[0];
+    var jobs = found.map(function (j) { return { id: j.id, title: j.title, company: j.company, city: j.city, source: j.source, mode: j.mode, posted: j.posted, match: j.match, isSaved: savedIds.indexOf(j.id) >= 0, cls: j.id === sel.id ? 'on' : '', pick: set({ selectedJobId: j.id }) }; });
+    var regLabel = function (id) { var g = REGIONS.find(function (x) { return x.id === id; }); return g ? g.label : id; };
+    var selSaved = savedIds.indexOf(sel.id) >= 0;
+    var jd = Object.assign({}, sel, {
+      sourceTag: 'VIA ' + sel.source.toUpperCase() + ' · ESTRUTURADA PELA IA', regionLabel: regLabel(sel.region),
+      resp: toT(sel.resp), req: toT(sel.req), dif: toT(sel.dif), benef: toT(sel.benef), strengths: toT(sel.strengths), gaps: toT(sel.gaps),
+      isSaved: selSaved, notSaved: !selSaved,
+      save: function () { self.saveJob(sel); }, open: set({ activeId: sel.id, screen: 'cand', tab: 'cv' })
+    });
+
+    // candidatura
+    var active = s.saved.find(function (x) { return x.jobId === s.activeId; }) || null;
+    var aJob = active ? this.job(active.jobId) : null;
+    var aj = {}; var flow = []; var timeline = []; var keywords = []; var cvBullets = []; var cvExtras = []; var msgs = [];
+    var isRejected = false; var canMarkApplied = false;
+    if (active && aJob) {
+      aj = Object.assign({}, aJob, {
+        stageLabel: stageLabel(active.stage, active.custom), req: toT(aJob.req.slice(0, 3)), gaps: toT(aJob.gaps),
+        kwLine: aJob.keywords.join(' · '),
+        cvSummary: 'Executivo com trajetória em produtos digitais, dados/IA e serviços B2B, hoje responsável por [escopo atual] dentro de uma unidade com P&L próprio. Foco recente em ' + aJob.focus + ', com time de [N] pessoas e base de fornecedores.'
+      });
+      isRejected = active.stage === 'reprovado';
+      canMarkApplied = active.stage === 'salva';
+      var reach = -1;
+      active.timeline.forEach(function (e) { var i = e.stage === 'outra' ? 5 : FLOW.indexOf(e.stage); if (i > reach) reach = i; });
+      flow = FLOW.map(function (id, i) {
+        var cls = i < reach ? 'done' : (i === reach ? (isRejected ? 'stop' : 'now') : '');
+        return { n: String(i + 1).padStart(2, '0'), label: stageLabel(id), cls: cls };
+      });
+      timeline = active.timeline.slice().reverse().map(function (e) {
+        var ls = e.lessons || [];
+        return { dateTxt: fmtDate(e.date), label: stageLabel(e.stage, e.custom), note: e.note || '', hasNote: !!e.note, reason: e.reason || '', hasReason: !!e.reason, lessons: toT(ls), hasLessons: ls.length > 0, dotCls: e.stage === 'reprovado' ? 'rep' : (e.stage === 'aprovado' ? 'ok' : '') };
+      });
+      keywords = aJob.keywords.map(function (k, i) { return { t: k, cls: i % 3 === 2 ? 'ia' : '' }; });
+      cvBullets = toT([
+        'Lidera time de [N] pessoas internas mais base de fornecedores em produto digital, dados/IA e suporte ao cliente, com foco em ' + aJob.focus + '.',
+        'Estruturou portfólio de produtos digitais B2B com [R$ X] em receita recorrente e [Y]% de crescimento em [período].',
+        'Implantou IA generativa em [processo], reduzindo [métrica] em [Z]% e liberando [N] horas/mês da operação.'
+      ]);
+      cvExtras = toT(s.cvExtras[aJob.id] || []);
+      var raw = s.chats[aJob.id] || this.seedChat(aJob);
+      msgs = raw.map(function (m, mi) {
+        var opts = (m.options || []).map(function (o, oi) {
+          var ch = m.chosen === oi;
+          return { label: o.label, text: o.text, canCv: !!o.cv, chosen: ch, cls: ch ? 'on' : '', choose: function () { self.choose(aJob.id, mi, oi); }, useCv: function () { self.useCv(aJob.id, o.text); } };
+        });
+        return { text: m.text, isMe: m.role === 'me', isAi: m.role === 'ai', hasOptions: opts.length > 0, options: opts };
+      });
+    }
+    var tabsDef = [['cv', 'CV sob medida'], ['chat', 'Copiloto'], ['status', 'Status & histórico']];
+    var tabs = tabsDef.map(function (t) { return { label: t[1], on: s.tab === t[0], cls: s.tab === t[0] ? 'on' : '', go: set({ tab: t[0] }) }; });
+    var stageChips = STAGES.map(function (st) { var on = s.stageDraft === st.id; return { label: st.label, on: on, cls: on ? 'on' : '', pick: set({ stageDraft: st.id }) }; });
+
+    // pipeline
+    var lastDate = function (x) { var t = x.timeline[x.timeline.length - 1]; return t ? t.date : ''; };
+    var cols = COLS.map(function (c) {
+      var items = s.saved.filter(function (x) { return c.st.indexOf(x.stage) >= 0; })
+        .sort(function (a, b) { return lastDate(b).localeCompare(lastDate(a)); })
+        .map(function (x) { var j = self.job(x.jobId); return { title: j.title, company: j.company, city: j.city, stageLabel: stageLabel(x.stage, x.custom), dateTxt: fmtDate(lastDate(x)), open: set({ activeId: x.jobId, screen: 'cand', tab: 'status' }) }; });
+      return { label: c.label, count: items.length, items: items, empty: items.length === 0 };
+    });
+    var reps = s.saved.filter(function (x) { return x.stage === 'reprovado'; });
+    var alive = s.saved.filter(function (x) { return x.stage !== 'reprovado' && x.stage !== 'aprovado'; }).length;
+    var rejections = reps.map(function (x) {
+      var j = self.job(x.jobId); var e = x.timeline.filter(function (t) { return t.stage === 'reprovado'; }).pop() || {};
+      return { title: j.title, company: j.company, reason: e.reason || 'Sem justificativa registrada.', lessons: toT(e.lessons || []) };
+    });
+    var pattern = reps.length === 0
+      ? 'Nenhuma reprovação registrada ainda. Quando vier, registre a justificativa: é o dado mais valioso do sistema.'
+      : (reps.length === 1
+        ? 'Uma reprovação ainda não é padrão, mas o motivo é claro: gap de setor (B2C, seguros). A IA passa a sinalizar vagas com esse requisito e a cobrar a ponte antes de você aplicar.'
+        : reps.length + ' reprovações registradas. A IA cruza as justificativas e ajusta o match das próximas vagas.');
+
+    return {
+      nav: nav, hasToast: !!s.toast, toast: s.toast,
+      isPerfil: s.screen === 'perfil', isCargos: s.screen === 'cargos', isVagas: s.screen === 'vagas', isCand: s.screen === 'cand', isPipe: s.screen === 'pipe',
+      goPerfil: set({ screen: 'perfil' }), goCargos: set({ screen: 'cargos' }), goVagas: set({ screen: 'vagas' }), goPipe: set({ screen: 'pipe' }),
+
+      noCv: !s.cvFile, hasCv: !!s.cvFile, cvFile: s.cvFile, extracted: toT(EXTRACTED),
+      pickCv: set({ cvFile: 'meu-cv-2026.pdf' }), removeCv: set({ cvFile: '' }),
+      desc: s.desc, onDesc: val('desc'), levels: levels,
+      genLabel: s.loading === 'roles' ? 'Lendo seu perfil…' : 'Gerar cargos com IA →',
+      genRoles: function () { self.setState({ loading: 'roles' }); self.later(function () { self.setState({ loading: '', screen: 'cargos' }); }); },
+
+      roles: roles, customRole: s.customRole, onCustomRole: val('customRole'),
+      addRole: function () { var t = self.state.customRole.trim(); if (!t) return; self.setState({ customRole: '', roles: self.state.roles.concat([{ id: 'c' + Date.now(), title: t, match: null, why: 'Adicionado por você. A IA busca títulos equivalentes.', checked: true, wild: false }]) }); },
+      regions: regions, cities: cities, cityDraft: s.cityDraft, onCity: val('cityDraft'), addCity: addCity,
+      onCityKey: function (e) { if (e.key === 'Enter') { e.preventDefault(); addCity(); } },
+      sources: sources, modes: modes, filterSummary: filterSummary,
+      searchLabel: s.loading === 'jobs' ? 'Varrendo as fontes…' : 'Buscar vagas →',
+      search: function () { self.setState({ loading: 'jobs' }); self.later(function () { self.setState({ loading: '', screen: 'vagas', selectedJobId: '' }); }); },
+
+      jobs: jobs, noJobs: found.length === 0, hasJobs: found.length > 0, jd: jd,
+      jobsTitle: found.length === 1 ? '1 vaga bate com o que você marcou.' : found.length + ' vagas batem com o que você marcou.',
+      jobsSub: 'Fontes: ' + (srcOn.join(', ') || 'nenhuma') + '. Ordenadas por aderência ao seu perfil. Dados de exemplo neste protótipo.',
+
+      noActive: !active, hasActive: !!active, aj: aj, flow: flow, isRejected: isRejected, canMarkApplied: canMarkApplied,
+      markApplied: function () { self.addEntry('aplicada', '', '2026-10-09', 'Cadastro feito no site da vaga.', ''); },
+      tabs: tabs, tabCv: s.tab === 'cv', tabChat: s.tab === 'chat', tabStatus: s.tab === 'status',
+      goChat: set({ tab: 'chat' }), exportCv: function () { self.flash('Na versão funcional, exporta PDF e salva em cv_versions'); },
+      keywords: keywords, cvBullets: cvBullets, cvExtras: cvExtras, extrasCount: cvExtras.length,
+      msgs: msgs, chatDraft: s.chatDraft, onChat: val('chatDraft'),
+      onChatKey: function (e) { if (e.key === 'Enter') { e.preventDefault(); self.send(self.state.chatDraft); } },
+      sendChat: function () { self.send(self.state.chatDraft); },
+      quick: QUICK.map(function (q) { return { t: q, use: function () { self.send(q); } }; }),
+      stageChips: stageChips, isOutraDraft: s.stageDraft === 'outra', isRepDraft: s.stageDraft === 'reprovado',
+      customStage: s.customStage, onCustomStage: val('customStage'),
+      dateDraft: s.dateDraft, onDate: val('dateDraft'), noteDraft: s.noteDraft, onNote: val('noteDraft'),
+      reasonDraft: s.reasonDraft, onReason: val('reasonDraft'),
+      register: function () { var st = self.state; self.addEntry(st.stageDraft, st.stageDraft === 'outra' ? (st.customStage.trim() || 'Fase X') : '', st.dateDraft, st.noteDraft.trim(), st.reasonDraft.trim()); },
+      timeline: timeline,
+
+      cols: cols, rejections: rejections, pattern: pattern,
+      pipeTitle: alive + (alive === 1 ? ' candidatura viva · ' : ' candidaturas vivas · ') + reps.length + (reps.length === 1 ? ' lição registrada' : ' lições registradas')
+    };
+  }
+}
+</script>
+</body>
+</html>

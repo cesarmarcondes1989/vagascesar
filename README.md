@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Radar · vagas
 
-## Getting Started
+App pessoal para buscar vagas com IA, montar o CV sob medida para cada uma e acompanhar as candidaturas até o fim, incluindo o que aprender com cada reprovação.
 
-First, run the development server:
+**Stack:** Next.js 15 (App Router) · Tailwind v4 · Supabase (Postgres + Auth + RLS) · Claude API · SerpAPI Google Jobs · Vercel
+
+## Fluxo
+
+1. **Minhas vagas** (`/`): tela inicial. Quadro por fase (Salvas → Aplicadas → Entrevistas → Proposta → Reprovadas) e painel com os aprendizados das reprovações.
+2. **Perfil** (`/perfil`): sobe o CV em PDF (o Claude lê direto o PDF), descrição livre, senioridade. A IA sugere cargos.
+3. **Buscar** (`/buscar`): checkbox de cargos, regiões de SP / cidades, fontes, modelo de trabalho. Busca no Google Jobs, o Claude estrutura cada vaga (resumo, responsabilidades, requisitos, benefícios, pontos fortes, gaps, aderência). "Salvar" grava no Supabase e abre a candidatura.
+4. **Candidatura** (`/candidatura/[id]`):
+   - **CV sob medida**: gerado pela IA para a vaga, com cobertura de palavras-chave e impressão em PDF.
+   - **Copiloto**: chat que devolve 3 versões de resposta; as boas vão pro CV.
+   - **Status & histórico**: fases (inclusive "Fase X" com nome livre), datas, notas. Em "Reprovado", a justificativa vira aprendizados gerados pela IA.
+
+## Colocar no ar (≈10 min)
+
+### 1. Supabase
+1. Crie um projeto em [supabase.com](https://supabase.com) (região São Paulo).
+2. **SQL Editor → New query**, cole `supabase/migrations/0001_init.sql` e rode.
+3. **Authentication → URL Configuration**:
+   - *Site URL*: a URL da Vercel (ex.: `https://vagascesar.vercel.app`)
+   - *Redirect URLs*: adicione `https://SUA-URL/auth/callback` e `http://localhost:3000/auth/callback`
+4. **Project Settings → API**: copie *Project URL* e *anon public key*.
+
+### 2. Chaves
+- Claude: [console.anthropic.com](https://console.anthropic.com) → API Keys
+- SerpAPI: [serpapi.com](https://serpapi.com) (plano grátis ~100 buscas/mês). Opcional: sem ela o app roda em **modo demo**.
+
+### 3. Vercel
+1. **Add New → Project →** importe `cesarmarcondes1989/vagascesar`.
+2. Em **Environment Variables**, cadastre as variáveis de `.env.example`.
+3. Deploy. A cada `git push` na `main` sai um deploy novo.
+
+## Rodar local
 
 ```bash
+cp .env.example .env.local   # preencha
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Custos e limites
+- Cada busca faz até 8 consultas ao SerpAPI (`MAX_QUERIES_PER_SEARCH` em `src/lib/constants.ts`) e manda até 30 vagas para o Claude estruturar.
+- Login por magic link, restrito aos e-mails em `ALLOWED_EMAILS`. Todas as tabelas têm RLS por usuário.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Fontes de vagas
+LinkedIn, Glassdoor e Indeed não oferecem API aberta e proíbem raspagem. O Google Jobs (via SerpAPI) agrega anúncios desses sites e de Gupy, Catho, Vagas.com etc., e cada vaga traz o link para candidatura no site original.
