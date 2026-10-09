@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { SearchProgress, type ProgressStep } from "@/components/SearchProgress";
 import { useRouter } from "next/navigation";
-import { MODES, REGIONS, SOURCES } from "@/lib/constants";
+import { MAX_QUERIES_PER_SEARCH, MODES, REGIONS, SOURCES } from "@/lib/constants";
 import type { LastSearch, SearchMeta, SearchPrefs, StructuredJob, SuggestedRole } from "@/lib/types";
 
 type Props = { roles: SuggestedRole[]; prefs: SearchPrefs | null; last: LastSearch | null; savedMap: Record<string, string> };
@@ -30,6 +31,10 @@ export function BuscarClient({ roles: initialRoles, prefs, last, savedMap }: Pro
   const [busy, setBusy] = useState<"" | "search" | "save">("");
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(savedMap);
+  const [progress, setProgress] = useState<ProgressStep | null>(null);
+  const [progressLog, setProgressLog] = useState<ProgressStep[]>([]);
+  const [startedAt, setStartedAt] = useState(0);
+  const progressRef = useRef<HTMLDivElement>(null);
 
   const sel = useMemo(() => jobs?.find((j) => j.external_id === selected) ?? jobs?.[0], [jobs, selected]);
 
@@ -49,17 +54,56 @@ export function BuscarClient({ roles: initialRoles, prefs, last, savedMap }: Pro
   async function search() {
     setError("");
     setBusy("search");
-    const res = await fetch("/api/jobs/search", {
-      method: "POST",
-      body: JSON.stringify({ roles: checked, regions, cities, sources, modes } satisfies SearchPrefs),
-    });
-    const data = await res.json();
-    setBusy("");
-    if (!res.ok) return setError(data.error ?? "Falha na busca");
-    setJobs(data.jobs);
-    setMeta({ demo: data.demo, queries: data.queries, found: data.found, broadened: data.broadened, afterSource: data.afterSource });
-    setSelected(data.jobs[0]?.external_id ?? "");
-    setSearchedAt(new Date().toISOString());
+    setProgress(null);
+    setProgressLog([]);
+    setStartedAt(Date.now());
+    progressRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    try {
+      const res = await fetch("/api/jobs/search", {
+        method: "POST",
+        body: JSON.stringify({ roles: checked, regions, cities, sources, modes } satisfies SearchPrefs),
+      });
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? `Falha na busca (HTTP ${res.status})`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finished = false;
+      while (!finished) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const msg = JSON.parse(line);
+          if (msg.type === "progress") {
+            const step: ProgressStep = { pct: msg.pct, step: msg.step, detail: msg.detail };
+            setProgress(step);
+            setProgressLog((l) => [...l, step]);
+          } else if (msg.type === "error") {
+            throw new Error(msg.error);
+          } else if (msg.type === "done") {
+            finished = true;
+            setJobs(msg.jobs);
+            setMeta({ demo: msg.demo, queries: msg.queries, found: msg.found, broadened: msg.broadened, afterSource: msg.afterSource });
+            setSelected(msg.jobs[0]?.external_id ?? "");
+            setSearchedAt(new Date().toISOString());
+          }
+        }
+      }
+      if (!finished) throw new Error("A busca foi interrompida antes de terminar (tempo limite do servidor). Tente com menos cargos ou locais.");
+      setTimeout(() => document.getElementById("resultados")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy("");
+    }
   }
 
   async function save(job: StructuredJob) {
@@ -199,17 +243,25 @@ export function BuscarClient({ roles: initialRoles, prefs, last, savedMap }: Pro
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-brand-deep px-5 py-[18px] text-ground">
-        <span className="font-mono text-sm">
-          {checked.length} cargos · {nPlaces} locais · {sources.length} fontes · {modes.join(" / ") || "nenhum modelo"}
+        <span className="flex flex-col gap-1 font-mono text-sm">
+          <span>
+            {checked.length} cargos · {nPlaces} locais · {sources.length} fontes · {modes.join(" / ") || "nenhum modelo"}
+          </span>
+          <span className="text-xs text-[#C9D6F2]">
+            = {Math.min(checked.length * nPlaces, MAX_QUERIES_PER_SEARCH)} consultas
+            {checked.length * nPlaces > MAX_QUERIES_PER_SEARCH ? ` (limite de ${MAX_QUERIES_PER_SEARCH}: ${checked.length * nPlaces - MAX_QUERIES_PER_SEARCH} combinações ficam de fora)` : ""}
+          </span>
         </span>
         <button type="button" className="btn border-ground bg-ground text-ink hover:border-white hover:bg-white" disabled={busy === "search"} onClick={search}>
-          {busy === "search" ? "Varrendo as fontes e lendo as vagas…" : "Buscar vagas →"}
+          {busy === "search" ? `Buscando… ${progress?.pct ?? 0}%` : "Buscar vagas →"}
         </button>
       </div>
 
+      <div ref={progressRef}>{busy === "search" && <SearchProgress current={progress} history={progressLog} startedAt={startedAt} />}</div>
+
       {error && <p className="m-0 rounded-xl bg-warn-paper p-3.5 text-sm text-warn-ink">{error}</p>}
 
-      {jobs && (
+      {jobs && busy !== "search" && (
         <div className="flex flex-col gap-5" id="resultados">
           <div className="flex max-w-[780px] flex-col gap-2.5">
             <span className="eyebrow">

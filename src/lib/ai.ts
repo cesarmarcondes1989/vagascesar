@@ -126,11 +126,17 @@ export async function suggestRoles(p: Partial<Profile>) {
 /* ---------- 3. Estruturar vagas e calcular aderência ---------- */
 type StructuredPart = Omit<StructuredJob, "external_id" | "source" | "url" | "region" | "demo"> & { id: string };
 
-export async function structureJobs(p: Partial<Profile>, raws: RawJob[]): Promise<StructuredPart[]> {
+export async function structureJobs(
+  p: Partial<Profile>,
+  raws: RawJob[],
+  onChunk?: (done: number, total: number, jobsDone: number) => void,
+): Promise<StructuredPart[]> {
   if (raws.length === 0) return [];
   const chunks: RawJob[][] = [];
   for (let i = 0; i < raws.length; i += 6) chunks.push(raws.slice(i, i + 6));
 
+  let chunksDone = 0;
+  let jobsDone = 0;
   const results = await Promise.all(
     chunks.map((chunk) =>
       structured<{ jobs: StructuredPart[] }>({
@@ -174,7 +180,12 @@ export async function structureJobs(p: Partial<Profile>, raws: RawJob[]): Promis
           required: ["jobs"],
         },
         maxTokens: 12000,
-      }).then((r) => r.jobs),
+      }).then((r) => {
+        chunksDone += 1;
+        jobsDone += chunk.length;
+        onChunk?.(chunksDone, chunks.length, jobsDone);
+        return r.jobs;
+      }),
     ),
   );
   return results.flat();

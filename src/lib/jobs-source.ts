@@ -93,8 +93,16 @@ type SerpJob = {
 
 const NO_RESULTS = /hasn't returned any results|no results/i;
 
-async function runQueries(queries: { q: string; place: Place }[], key: string) {
+export type SearchProgress = { phase: "query" | "broaden"; done: number; total: number; found: number; label: string };
+
+async function runQueries(
+  queries: { q: string; place: Place }[],
+  key: string,
+  onEach?: (done: number, found: number, label: string) => void,
+) {
   const errors: string[] = [];
+  let done = 0;
+  let found = 0;
   const results = await Promise.all(
     queries.map(async ({ q, place }) => {
       const params = new URLSearchParams({
@@ -114,6 +122,9 @@ async function runQueries(queries: { q: string; place: Place }[], key: string) {
         data = { error: (e as Error).message };
       }
       if (data.error && !NO_RESULTS.test(data.error)) errors.push(`"${q}" em ${place.label}: ${data.error}`);
+      done += 1;
+      found += data.jobs_results?.length ?? 0;
+      onEach?.(done, found, `"${q}" em ${place.label}: ${data.jobs_results?.length ?? 0} anúncios`);
       return (data.jobs_results ?? []).map<RawJob>((j) => {
         const via = (j.via ?? "").replace(/^via\s+/i, "");
         const applyTitles = (j.apply_options ?? []).map((a) => a.title);
@@ -137,13 +148,20 @@ async function runQueries(queries: { q: string; place: Place }[], key: string) {
   return { jobs: results.flat(), errors };
 }
 
-export async function searchJobs(roles: string[], regions: string[], cities: string[]) {
+export async function searchJobs(
+  roles: string[],
+  regions: string[],
+  cities: string[],
+  onProgress?: (p: SearchProgress) => void,
+) {
   const places = buildPlaces(regions, cities);
   const queries = buildQueries(roles, places);
   const key = process.env.SERPAPI_KEY;
   if (!key) return { jobs: demoJobs(regions, cities), demo: true, queries: queries.length, errors: [] as string[], broadened: false };
 
-  let { jobs, errors } = await runQueries(queries, key);
+  let { jobs, errors } = await runQueries(queries, key, (done, found, label) =>
+    onProgress?.({ phase: "query", done, total: queries.length, found, label }),
+  );
   let used = queries.length;
   let broadened = false;
 
@@ -151,7 +169,9 @@ export async function searchJobs(roles: string[], regions: string[], cities: str
   if (jobs.length === 0 && errors.length === 0) {
     const broad = buildQueries(roles, places, true).filter((b) => !queries.some((q) => q.q === b.q && q.place.label === b.place.label)).slice(0, 4);
     if (broad.length) {
-      const second = await runQueries(broad, key);
+      const second = await runQueries(broad, key, (done, found, label) =>
+        onProgress?.({ phase: "broaden", done, total: broad.length, found, label }),
+      );
       jobs = second.jobs;
       errors = second.errors;
       used += broad.length;
