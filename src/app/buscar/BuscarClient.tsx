@@ -32,6 +32,7 @@ export function BuscarClient({ roles: initialRoles, prefs, last, savedMap }: Pro
   const [selected, setSelected] = useState<string>("");
   const [busy, setBusy] = useState<"" | "search">("");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [pending, setPending] = useState<PendingJob[]>([]);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(savedMap);
@@ -125,10 +126,11 @@ export function BuscarClient({ roles: initialRoles, prefs, last, savedMap }: Pro
 
   async function save(job: StructuredJob) {
     setSaving(true);
+    setSaveError("");
     const res = await fetch("/api/applications", { method: "POST", body: JSON.stringify({ job }) });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setSaving(false);
-    if (!res.ok) return setError(data.error ?? "Falha ao salvar");
+    if (!res.ok) return setSaveError(data.error ?? `Falha ao salvar (HTTP ${res.status})`);
     setSaved((s) => ({ ...s, [job.external_id]: data.id }));
     // While the search is still running, stay here (leaving would cut the stream).
     if (busy !== "search") router.push(`/candidatura/${data.id}`);
@@ -347,7 +349,7 @@ export function BuscarClient({ roles: initialRoles, prefs, last, savedMap }: Pro
                 ))}
               </div>
               {sel ? (
-                <JobDetail job={sel} appId={saved[sel.external_id]} saving={saving} onSave={() => save(sel)} />
+                <JobDetail job={sel} appId={saved[sel.external_id]} saving={saving} saveError={saveError} onSave={() => save(sel)} />
               ) : (
                 <div className="card flex min-w-0 flex-[999_1_560px] items-center justify-center p-10 text-muted">A primeira vaga lida pela IA aparece aqui em instantes.</div>
               )}
@@ -373,7 +375,19 @@ function List({ title, items }: { title: string; items: string[] }) {
   );
 }
 
-function JobDetail({ job, appId, saving, onSave }: { job: StructuredJob; appId?: string; saving: boolean; onSave: () => void }) {
+function JobDetail({
+  job,
+  appId,
+  saving,
+  saveError,
+  onSave,
+}: {
+  job: StructuredJob;
+  appId?: string;
+  saving: boolean;
+  saveError: string;
+  onSave: () => void;
+}) {
   const region = REGIONS.find((r) => r.id === job.region)?.label;
   return (
     <article className="card flex min-w-0 flex-[999_1_560px] flex-col gap-[22px] p-7">
@@ -414,6 +428,11 @@ function JobDetail({ job, appId, saving, onSave }: { job: StructuredJob; appId?:
           </a>
         )}
       </div>
+      {saveError && (
+        <p role="alert" className="m-0 -mt-2 rounded-xl bg-warn-paper p-3.5 text-sm text-warn-ink">
+          Não consegui salvar: {saveError}
+        </p>
+      )}
       <div className="flex flex-col gap-2">
         <h3 className="lbl m-0 text-base">Resumo</h3>
         <p className="m-0 text-[15px] leading-relaxed">{job.summary}</p>
