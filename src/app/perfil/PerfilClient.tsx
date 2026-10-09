@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LEVELS } from "@/lib/constants";
 import type { Profile } from "@/lib/types";
@@ -14,6 +14,29 @@ export function PerfilClient({ profile }: { profile: Profile | null }) {
   const [levels, setLevels] = useState<string[]>(profile?.levels?.length ? profile.levels : ["Head", "Diretoria"]);
   const [busy, setBusy] = useState<"" | "cv" | "roles">("");
   const [error, setError] = useState("");
+  const [saveState, setSaveState] = useState<{ kind: "idle" | "saving" | "saved" | "error"; msg?: string }>(
+    profile?.description ? { kind: "saved", msg: "Perfil salvo" } : { kind: "idle" },
+  );
+  const firstRender = useRef(true);
+
+  // Autosave: description and seniority are saved ~1s after you stop typing.
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    setSaveState({ kind: "saving" });
+    const t = setTimeout(async () => {
+      const res = await fetch("/api/profile", { method: "PUT", body: JSON.stringify({ description: desc, levels }) });
+      if (res.ok) {
+        const time = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+        setSaveState({ kind: "saved", msg: `Salvo às ${time}` });
+      } else {
+        setSaveState({ kind: "error", msg: (await res.json()).error ?? "Falha ao salvar" });
+      }
+    }, 900);
+    return () => clearTimeout(t);
+  }, [desc, levels]);
 
   async function upload(file: File) {
     setError("");
@@ -48,7 +71,15 @@ export function PerfilClient({ profile }: { profile: Profile | null }) {
   return (
     <section className="flex flex-col gap-7">
       <div className="flex max-w-[780px] flex-col gap-2.5">
-        <span className="eyebrow">ETAPA 1 · PERFIL</span>
+        <span className="flex flex-wrap items-center gap-3">
+          <span className="eyebrow">ETAPA 1 · PERFIL</span>
+          <span
+            role="status"
+            className={`font-mono text-xs ${saveState.kind === "error" ? "text-warn-ink" : "text-muted"}`}
+          >
+            {saveState.kind === "saving" ? "salvando…" : saveState.msg ?? ""}
+          </span>
+        </span>
         <h1 className="h1 m-0">Quem você é, numa tela só. O resto é trabalho da IA.</h1>
         <p className="m-0 text-[17px] leading-relaxed text-muted">
           Suba o CV, descreva em texto livre, ou os dois. A IA cruza tudo e propõe cargos, inclusive alguns que você não teria buscado sozinho.

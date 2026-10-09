@@ -4,15 +4,15 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MODES, REGIONS, SOURCES } from "@/lib/constants";
-import type { SearchPrefs, StructuredJob, SuggestedRole } from "@/lib/types";
+import type { LastSearch, SearchMeta, SearchPrefs, StructuredJob, SuggestedRole } from "@/lib/types";
 
-type Props = { roles: SuggestedRole[]; prefs: SearchPrefs | null; savedMap: Record<string, string> };
+type Props = { roles: SuggestedRole[]; prefs: SearchPrefs | null; last: LastSearch | null; savedMap: Record<string, string> };
 
 function toggle(list: string[], v: string) {
   return list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
 }
 
-export function BuscarClient({ roles: initialRoles, prefs, savedMap }: Props) {
+export function BuscarClient({ roles: initialRoles, prefs, last, savedMap }: Props) {
   const router = useRouter();
   const [roles, setRoles] = useState<SuggestedRole[]>(initialRoles);
   const [checked, setChecked] = useState<string[]>(prefs?.roles?.length ? prefs.roles : initialRoles.slice(0, 3).map((r) => r.title));
@@ -23,8 +23,9 @@ export function BuscarClient({ roles: initialRoles, prefs, savedMap }: Props) {
   const [sources, setSources] = useState<string[]>(prefs?.sources?.length ? prefs.sources : [...SOURCES]);
   const [modes, setModes] = useState<string[]>(prefs?.modes?.length ? prefs.modes : [...MODES]);
 
-  const [jobs, setJobs] = useState<StructuredJob[] | null>(null);
-  const [meta, setMeta] = useState<{ demo: boolean; queries: number; found: number; broadened: boolean; afterSource: number } | null>(null);
+  const [jobs, setJobs] = useState<StructuredJob[] | null>(last?.jobs ?? null);
+  const [meta, setMeta] = useState<SearchMeta | null>(last?.meta ?? null);
+  const [searchedAt, setSearchedAt] = useState<string | null>(last?.at ?? null);
   const [selected, setSelected] = useState<string>("");
   const [busy, setBusy] = useState<"" | "search" | "save">("");
   const [error, setError] = useState("");
@@ -58,6 +59,7 @@ export function BuscarClient({ roles: initialRoles, prefs, savedMap }: Props) {
     setJobs(data.jobs);
     setMeta({ demo: data.demo, queries: data.queries, found: data.found, broadened: data.broadened, afterSource: data.afterSource });
     setSelected(data.jobs[0]?.external_id ?? "");
+    setSearchedAt(new Date().toISOString());
   }
 
   async function save(job: StructuredJob) {
@@ -210,7 +212,10 @@ export function BuscarClient({ roles: initialRoles, prefs, savedMap }: Props) {
       {jobs && (
         <div className="flex flex-col gap-5" id="resultados">
           <div className="flex max-w-[780px] flex-col gap-2.5">
-            <span className="eyebrow">ETAPA 3 · VAGAS</span>
+            <span className="eyebrow">
+              ETAPA 3 · VAGAS
+              {searchedAt ? ` · BUSCA DE ${new Date(searchedAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : ""}
+            </span>
             <h2 className="h1 m-0">{jobs.length === 1 ? "1 vaga bate com o que você marcou." : `${jobs.length} vagas batem com o que você marcou.`}</h2>
             <p className="m-0 text-base text-muted">
               {meta?.demo

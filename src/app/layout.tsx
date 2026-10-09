@@ -7,6 +7,9 @@ import "@fontsource/ibm-plex-mono/500.css";
 import "@fontsource/space-grotesk/500.css";
 import "@fontsource/space-grotesk/700.css";
 import { Header } from "@/components/Header";
+import { SetupBanner } from "@/components/SetupBanner";
+
+export const dynamic = "force-dynamic";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,6 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="pt-BR">
       <body className="min-h-screen antialiased">
         <Header gated={!!process.env.APP_PASSWORD} />
+        <SetupBanner />
         <main className="mx-auto max-w-[1280px] px-4 pt-9 pb-28 md:px-6">{children}</main>
       </body>
     </html>

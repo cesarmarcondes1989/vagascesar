@@ -14,7 +14,11 @@ export type Profile = {
   extracted_skills: string[] | null;
   suggested_roles: SuggestedRole[] | null;
   search_prefs: SearchPrefs | null;
+  last_search: LastSearch | null;
 };
+
+export type SearchMeta = { demo: boolean; queries: number; found: number; broadened: boolean; afterSource: number };
+export type LastSearch = { at: string; jobs: StructuredJob[]; meta: SearchMeta };
 
 export type SearchPrefs = {
   roles: string[];

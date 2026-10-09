@@ -19,7 +19,7 @@ App pessoal para buscar vagas com IA, montar o CV sob medida para cada uma e aco
 ### 1. Supabase
 1. Crie um projeto em [supabase.com](https://supabase.com) (região São Paulo).
 2. **SQL Editor → New query**, cole `supabase/migrations/0001_init.sql` e rode.
-3. Rode também `supabase/migrations/0002_sem_login.sql` (o app não usa login do Supabase).
+3. Rode também `0002_sem_login.sql` e `0003_salvar_tudo.sql` (sem login + última busca salva). Se algo faltar, o app mostra um aviso laranja no topo dizendo o quê.
 4. **Project Settings → API**: copie *Project URL* e a chave *service_role* (secreta).
 
 ### 2. Chaves

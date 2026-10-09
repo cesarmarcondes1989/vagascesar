@@ -17,5 +17,5 @@ export default async function BuscarPage() {
     if (appId) savedMap[j.external_id as string] = appId;
   }
 
-  return <BuscarClient roles={profile?.suggested_roles ?? []} prefs={profile?.search_prefs ?? null} savedMap={savedMap} />;
+  return <BuscarClient roles={profile?.suggested_roles ?? []} prefs={profile?.search_prefs ?? null} last={profile?.last_search ?? null} savedMap={savedMap} />;
 }

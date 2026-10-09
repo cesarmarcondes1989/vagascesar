@@ -17,6 +17,9 @@ App pessoal (single-user) do Cesar: busca vagas com IA, gera CV sob medida, copi
 - `src/middleware.ts`: só ativa se `APP_PASSWORD` existir: senha simples via cookie (`src/lib/gate.ts`). Sem Supabase Auth (o magic link estourava o limite de e-mails).
 - `supabase/migrations/`: schema. Tabelas: `profiles`, `jobs`, `applications`, `application_events`, `cv_versions`, `chat_messages`. RLS ligado sem políticas (acesso só via service role no servidor); `user_id` = `OWNER_ID`. **Mudou schema? Crie nova migration numerada**, não edite a 0001.
 
+- `src/lib/health.ts` + `src/components/SetupBanner.tsx`: checa env, chave errada (anon no lugar da service role) e migrations pendentes; aviso no topo de toda tela.
+- Perfil salva sozinho (autosave ~1s). A última busca fica em `profiles.last_search`; cargos digitados à mão entram em `suggested_roles`.
+
 ## Design
 - Paleta azul, **sem preto** (pedido explícito): tokens em `src/app/globals.css` (`brand` #1D4ED8, `brand-deep` #1E3A8A, `ink` #0F1E3D só para texto). Laranja (`warn`) só para alertas: reprovação, gaps, "aposta ousada".
 - Fontes: IBM Plex Sans/Mono + Space Grotesk (display), via `@fontsource` (não usar `next/font/google`).
