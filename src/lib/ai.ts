@@ -124,16 +124,16 @@ export async function suggestRoles(p: Partial<Profile>) {
 }
 
 /* ---------- 3. Estruturar vagas e calcular aderência ---------- */
-type StructuredPart = Omit<StructuredJob, "external_id" | "source" | "url" | "region" | "demo"> & { id: string };
+export type StructuredPart = Omit<StructuredJob, "external_id" | "source" | "url" | "region" | "demo"> & { id: string };
 
 export async function structureJobs(
   p: Partial<Profile>,
   raws: RawJob[],
-  onChunk?: (done: number, total: number, jobsDone: number) => void,
+  onChunk?: (done: number, total: number, jobsDone: number, results: StructuredPart[]) => void,
 ): Promise<StructuredPart[]> {
   if (raws.length === 0) return [];
   const chunks: RawJob[][] = [];
-  for (let i = 0; i < raws.length; i += 6) chunks.push(raws.slice(i, i + 6));
+  for (let i = 0; i < raws.length; i += 4) chunks.push(raws.slice(i, i + 4));
 
   let chunksDone = 0;
   let jobsDone = 0;
@@ -183,7 +183,7 @@ export async function structureJobs(
       }).then((r) => {
         chunksDone += 1;
         jobsDone += chunk.length;
-        onChunk?.(chunksDone, chunks.length, jobsDone);
+        onChunk?.(chunksDone, chunks.length, jobsDone, r.jobs);
         return r.jobs;
       }),
     ),

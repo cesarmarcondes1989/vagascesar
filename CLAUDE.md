@@ -18,6 +18,7 @@ App pessoal (single-user) do Cesar: busca vagas com IA, gera CV sob medida, copi
 - `supabase/migrations/`: schema. Tabelas: `profiles`, `jobs`, `applications`, `application_events`, `cv_versions`, `chat_messages`. RLS ligado sem políticas (acesso só via service role no servidor); `user_id` = `OWNER_ID`. **Mudou schema? Crie nova migration numerada**, não edite a 0001.
 
 - `src/lib/health.ts` + `src/components/SetupBanner.tsx`: checa env, chave errada (anon no lugar da service role) e migrations pendentes; aviso no topo de toda tela.
+- Busca (`/api/jobs/search`) é uma esteira em NDJSON: cada consulta do SerpAPI já vai para a IA (lotes de 4 em paralelo) e cada lote lido vira evento `jobs` na tela. Prazo próprio `SEARCH_BUDGET_SECONDS` (padrão 50) fecha com resultado parcial; `last_search` é salvo a cada lote. `SERPAPI_BASE_URL`/`ANTHROPIC_BASE_URL` permitem testar com mock.
 - Perfil salva sozinho (autosave ~1s). A última busca fica em `profiles.last_search`; cargos digitados à mão entram em `suggested_roles`.
 
 ## Design

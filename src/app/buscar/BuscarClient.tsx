@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { MAX_QUERIES_PER_SEARCH, MODES, REGIONS, SOURCES } from "@/lib/constants";
 import type { LastSearch, SearchMeta, SearchPrefs, StructuredJob, SuggestedRole } from "@/lib/types";
 
+type PendingJob = { external_id: string; title: string; company: string; city: string; source: string };
+
 type Props = { roles: SuggestedRole[]; prefs: SearchPrefs | null; last: LastSearch | null; savedMap: Record<string, string> };
 
 function toggle(list: string[], v: string) {
@@ -28,7 +30,9 @@ export function BuscarClient({ roles: initialRoles, prefs, last, savedMap }: Pro
   const [meta, setMeta] = useState<SearchMeta | null>(last?.meta ?? null);
   const [searchedAt, setSearchedAt] = useState<string | null>(last?.at ?? null);
   const [selected, setSelected] = useState<string>("");
-  const [busy, setBusy] = useState<"" | "search" | "save">("");
+  const [busy, setBusy] = useState<"" | "search">("");
+  const [saving, setSaving] = useState(false);
+  const [pending, setPending] = useState<PendingJob[]>([]);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(savedMap);
   const [progress, setProgress] = useState<ProgressStep | null>(null);
@@ -57,7 +61,12 @@ export function BuscarClient({ roles: initialRoles, prefs, last, savedMap }: Pro
     setProgress(null);
     setProgressLog([]);
     setStartedAt(Date.now());
-    progressRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setJobs([]);
+    setPending([]);
+    setMeta(null);
+    setSelected("");
+    setSearchedAt(new Date().toISOString());
+    progressRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
     try {
       const res = await fetch("/api/jobs/search", {
@@ -86,34 +95,43 @@ export function BuscarClient({ roles: initialRoles, prefs, last, savedMap }: Pro
             const step: ProgressStep = { pct: msg.pct, step: msg.step, detail: msg.detail };
             setProgress(step);
             setProgressLog((l) => [...l, step]);
+          } else if (msg.type === "found") {
+            setPending((p) => [...p, ...(msg.items as PendingJob[])]);
+          } else if (msg.type === "jobs") {
+            const incoming = msg.jobs as StructuredJob[];
+            const readIds = new Set<string>(msg.readIds as string[]);
+            setJobs((cur) => [...(cur ?? []), ...incoming].sort((a, b) => b.match - a.match));
+            setPending((p) => p.filter((x) => !readIds.has(x.external_id)));
+            setSelected((cur) => cur || incoming[0]?.external_id || "");
           } else if (msg.type === "error") {
             throw new Error(msg.error);
           } else if (msg.type === "done") {
             finished = true;
             setJobs(msg.jobs);
-            setMeta({ demo: msg.demo, queries: msg.queries, found: msg.found, broadened: msg.broadened, afterSource: msg.afterSource });
-            setSelected(msg.jobs[0]?.external_id ?? "");
-            setSearchedAt(new Date().toISOString());
+            setPending([]);
+            setMeta({ demo: msg.demo, queries: msg.queries, found: msg.found, broadened: msg.broadened, afterSource: msg.afterSource, partial: msg.partial });
+            setSelected((cur) => cur || msg.jobs[0]?.external_id || "");
           }
         }
       }
-      if (!finished) throw new Error("A busca foi interrompida antes de terminar (tempo limite do servidor). Tente com menos cargos ou locais.");
-      setTimeout(() => document.getElementById("resultados")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+      if (!finished) throw new Error("O servidor cortou a busca antes do fim. As vagas que já chegaram continuam na tela e foram salvas; para o resto, busque com menos cargos ou locais.");
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setBusy("");
+      setPending([]);
     }
   }
 
   async function save(job: StructuredJob) {
-    setBusy("save");
+    setSaving(true);
     const res = await fetch("/api/applications", { method: "POST", body: JSON.stringify({ job }) });
     const data = await res.json();
-    setBusy("");
+    setSaving(false);
     if (!res.ok) return setError(data.error ?? "Falha ao salvar");
     setSaved((s) => ({ ...s, [job.external_id]: data.id }));
-    router.push(`/candidatura/${data.id}`);
+    // While the search is still running, stay here (leaving would cut the stream).
+    if (busy !== "search") router.push(`/candidatura/${data.id}`);
   }
 
   const nPlaces = regions.length + cities.length;
@@ -261,24 +279,32 @@ export function BuscarClient({ roles: initialRoles, prefs, last, savedMap }: Pro
 
       {error && <p className="m-0 rounded-xl bg-warn-paper p-3.5 text-sm text-warn-ink">{error}</p>}
 
-      {jobs && busy !== "search" && (
+      {jobs && (busy !== "search" || jobs.length > 0 || pending.length > 0) && (
         <div className="flex flex-col gap-5" id="resultados">
           <div className="flex max-w-[780px] flex-col gap-2.5">
             <span className="eyebrow">
               ETAPA 3 · VAGAS
               {searchedAt ? ` · BUSCA DE ${new Date(searchedAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : ""}
             </span>
-            <h2 className="h1 m-0">{jobs.length === 1 ? "1 vaga bate com o que você marcou." : `${jobs.length} vagas batem com o que você marcou.`}</h2>
+            <h2 className="h1 m-0">
+              {busy === "search"
+                ? `${jobs.length} ${jobs.length === 1 ? "vaga pronta" : "vagas prontas"}${pending.length ? ` · ${pending.length} com a IA` : ""}…`
+                : jobs.length === 1
+                  ? "1 vaga bate com o que você marcou."
+                  : `${jobs.length} vagas batem com o que você marcou.`}
+            </h2>
             <p className="m-0 text-base text-muted">
-              {meta?.demo
+              {busy === "search"
+                ? "Já pode abrir e salvar as vagas prontas: a lista continua chegando e se reordena por aderência."
+                : meta?.demo
                 ? "Modo demo: SERPAPI_KEY não configurada, então estas são vagas de exemplo. A IA estruturou e avaliou de verdade."
                 : `${meta?.found ?? 0} anúncios encontrados em ${meta?.queries} consultas${meta?.broadened ? " (ampliei os termos: a busca exata não trouxe nada)" : ""}${
                     meta && meta.found > meta.afterSource ? ` · ${meta.found - meta.afterSource} descartados pelo filtro de fontes` : ""
-                  }. Ordenadas por aderência.`}
+                  }. Ordenadas por aderência.${meta?.partial ? " A busca bateu no limite de tempo: algumas vagas ficaram sem leitura. Busque de novo com menos combinações para ver o resto." : ""}`}
             </p>
           </div>
 
-          {jobs.length === 0 ? (
+          {jobs.length === 0 && pending.length === 0 ? (
             <div className="card">
               <p className="m-0 text-muted">Nada com esses filtros. Abra mais regiões, inclua uma cidade ou marque outro cargo.</p>
             </div>
@@ -307,8 +333,24 @@ export function BuscarClient({ roles: initialRoles, prefs, last, savedMap }: Pro
                     </span>
                   </button>
                 ))}
+                {pending.map((p) => (
+                  <div key={p.external_id} className="flex w-full items-start gap-3.5 rounded-[14px] border border-dashed border-line-strong bg-white/70 p-4">
+                    <span className="flex size-[52px] flex-none animate-pulse items-center justify-center rounded-xl bg-panel font-mono text-[11px] text-muted">IA…</span>
+                    <span className="flex min-w-0 flex-1 flex-col gap-1">
+                      <span className="text-[15px] font-semibold text-ink/80">{p.title}</span>
+                      <span className="text-sm text-muted">
+                        {p.company} · {p.city}
+                      </span>
+                      <span className="font-mono text-xs text-muted">{p.source} · a IA está lendo esta vaga</span>
+                    </span>
+                  </div>
+                ))}
               </div>
-              {sel && <JobDetail job={sel} appId={saved[sel.external_id]} saving={busy === "save"} onSave={() => save(sel)} />}
+              {sel ? (
+                <JobDetail job={sel} appId={saved[sel.external_id]} saving={saving} onSave={() => save(sel)} />
+              ) : (
+                <div className="card flex min-w-0 flex-[999_1_560px] items-center justify-center p-10 text-muted">A primeira vaga lida pela IA aparece aqui em instantes.</div>
+              )}
             </div>
           )}
         </div>

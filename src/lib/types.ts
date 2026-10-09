@@ -17,7 +17,7 @@ export type Profile = {
   last_search: LastSearch | null;
 };
 
-export type SearchMeta = { demo: boolean; queries: number; found: number; broadened: boolean; afterSource: number };
+export type SearchMeta = { demo: boolean; queries: number; found: number; broadened: boolean; afterSource: number; partial?: boolean };
 export type LastSearch = { at: string; jobs: StructuredJob[]; meta: SearchMeta };
 
 export type SearchPrefs = {

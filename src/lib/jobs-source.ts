@@ -93,12 +93,12 @@ type SerpJob = {
 
 const NO_RESULTS = /hasn't returned any results|no results/i;
 
-export type SearchProgress = { phase: "query" | "broaden"; done: number; total: number; found: number; label: string };
+export type SearchProgress = { phase: "query" | "broaden"; done: number; total: number; found: number; label: string; batch: RawJob[] };
 
 async function runQueries(
   queries: { q: string; place: Place }[],
   key: string,
-  onEach?: (done: number, found: number, label: string) => void,
+  onEach?: (done: number, found: number, label: string, batch: RawJob[]) => void,
 ) {
   const errors: string[] = [];
   let done = 0;
@@ -115,17 +115,15 @@ async function runQueries(
       });
       let data: { jobs_results?: SerpJob[]; error?: string };
       try {
-        const res = await fetch(`https://serpapi.com/search.json?${params}`, { cache: "no-store" });
+        const base = process.env.SERPAPI_BASE_URL || "https://serpapi.com";
+        const res = await fetch(`${base}/search.json?${params}`, { cache: "no-store" });
         data = await res.json();
         if (!res.ok && !data.error) data.error = `HTTP ${res.status}`;
       } catch (e) {
         data = { error: (e as Error).message };
       }
       if (data.error && !NO_RESULTS.test(data.error)) errors.push(`"${q}" em ${place.label}: ${data.error}`);
-      done += 1;
-      found += data.jobs_results?.length ?? 0;
-      onEach?.(done, found, `"${q}" em ${place.label}: ${data.jobs_results?.length ?? 0} anúncios`);
-      return (data.jobs_results ?? []).map<RawJob>((j) => {
+      const mapped = (data.jobs_results ?? []).map<RawJob>((j) => {
         const via = (j.via ?? "").replace(/^via\s+/i, "");
         const applyTitles = (j.apply_options ?? []).map((a) => a.title);
         return {
@@ -143,6 +141,10 @@ async function runQueries(
           region: place.region,
         };
       });
+      done += 1;
+      found += mapped.length;
+      onEach?.(done, found, `"${q}" em ${place.label}: ${mapped.length} anúncios`, mapped);
+      return mapped;
     }),
   );
   return { jobs: results.flat(), errors };
@@ -159,8 +161,8 @@ export async function searchJobs(
   const key = process.env.SERPAPI_KEY;
   if (!key) return { jobs: demoJobs(regions, cities), demo: true, queries: queries.length, errors: [] as string[], broadened: false };
 
-  let { jobs, errors } = await runQueries(queries, key, (done, found, label) =>
-    onProgress?.({ phase: "query", done, total: queries.length, found, label }),
+  let { jobs, errors } = await runQueries(queries, key, (done, found, label, batch) =>
+    onProgress?.({ phase: "query", done, total: queries.length, found, label, batch }),
   );
   let used = queries.length;
   let broadened = false;
@@ -169,8 +171,8 @@ export async function searchJobs(
   if (jobs.length === 0 && errors.length === 0) {
     const broad = buildQueries(roles, places, true).filter((b) => !queries.some((q) => q.q === b.q && q.place.label === b.place.label)).slice(0, 4);
     if (broad.length) {
-      const second = await runQueries(broad, key, (done, found, label) =>
-        onProgress?.({ phase: "broaden", done, total: broad.length, found, label }),
+      const second = await runQueries(broad, key, (done, found, label, batch) =>
+        onProgress?.({ phase: "broaden", done, total: broad.length, found, label, batch }),
       );
       jobs = second.jobs;
       errors = second.errors;
