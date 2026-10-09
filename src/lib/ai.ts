@@ -26,17 +26,41 @@ async function structured<T>(opts: {
   schema: JsonSchema;
   maxTokens?: number;
 }): Promise<T> {
+  // Some models reject a forced tool_choice ("tool"/"any"), so we use "auto" with a single
+  // tool plus an explicit instruction, and fall back to parsing JSON from the text.
   const res = await client().messages.create({
     model: MODEL,
     max_tokens: opts.maxTokens ?? 4096,
-    system: SYSTEM_BASE + (opts.system ? `\n\n${opts.system}` : ""),
+    system:
+      SYSTEM_BASE +
+      (opts.system ? `\n\n${opts.system}` : "") +
+      `\n\nIMPORTANTE: responda SEMPRE chamando a ferramenta "${opts.tool}" com o resultado completo. Não escreva texto fora dela.`,
     messages: [{ role: "user", content: opts.content }],
     tools: [{ name: opts.tool, description: opts.description, input_schema: opts.schema as Anthropic.Tool.InputSchema }],
-    tool_choice: { type: "tool", name: opts.tool },
+    tool_choice: { type: "auto" },
   });
-  const block = res.content.find((b) => b.type === "tool_use");
-  if (!block || block.type !== "tool_use") throw new Error("Resposta da IA sem conteúdo estruturado");
-  return block.input as T;
+
+  const block = res.content.find((b) => b.type === "tool_use" && b.name === opts.tool);
+  if (block && block.type === "tool_use") return block.input as T;
+
+  const text = res.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("\n");
+  const parsed = extractJson(text);
+  if (parsed) return parsed as T;
+  throw new Error("A IA não devolveu o formato esperado. Tente de novo.");
+}
+
+function extractJson(text: string): unknown {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const candidate = fenced ? fenced[1] : text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1);
+  if (!candidate) return null;
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    return null;
+  }
 }
 
 const str = { type: "string" };
