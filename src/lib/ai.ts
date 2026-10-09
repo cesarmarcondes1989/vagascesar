@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { ChatOption, CvContent, Profile, StructuredJob, SuggestedRole } from "./types";
+import type { Profile, StructuredJob, SuggestedRole } from "./types";
 import type { RawJob } from "./jobs-source";
+import { normalizeCv, normalizeOptions, toInt, toStr, toStrArr } from "./normalize";
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5";
 
@@ -78,7 +79,7 @@ export function profileText(p: Partial<Profile> | null) {
 
 /* ---------- 1. Ler o CV em PDF ---------- */
 export async function extractCv(pdfBase64: string) {
-  return structured<{ cv_text: string; skills: string[] }>({
+  const out = await structured<{ cv_text: unknown; skills: unknown }>({
     tool: "salvar_cv",
     description: "Salva o conteúdo do currículo lido.",
     content: [
@@ -95,11 +96,12 @@ export async function extractCv(pdfBase64: string) {
     },
     maxTokens: 8000,
   });
+  return { cv_text: toStr(out.cv_text), skills: toStrArr(out.skills) };
 }
 
 /* ---------- 2. Sugerir cargos ---------- */
 export async function suggestRoles(p: Partial<Profile>) {
-  const out = await structured<{ roles: SuggestedRole[] }>({
+  const out = await structured<{ roles: unknown }>({
     tool: "sugerir_cargos",
     description: "Lista de cargos sugeridos para buscar vagas.",
     system:
@@ -120,7 +122,10 @@ export async function suggestRoles(p: Partial<Profile>) {
       required: ["roles"],
     },
   });
-  return out.roles.sort((a, b) => (b.match ?? 0) - (a.match ?? 0));
+  const roles: SuggestedRole[] = (Array.isArray(out.roles) ? out.roles : safeJsonArray(out.roles))
+    .map((r: Record<string, unknown>) => ({ title: toStr(r.title), match: toInt(r.match), why: toStr(r.why), wild: r.wild === true || r.wild === "true" }))
+    .filter((r: SuggestedRole) => r.title);
+  return roles.sort((a, b) => (b.match ?? 0) - (a.match ?? 0));
 }
 
 /* ---------- 3. Estruturar vagas e calcular aderência ---------- */
@@ -139,7 +144,7 @@ export async function structureJobs(
   let jobsDone = 0;
   const results = await Promise.all(
     chunks.map((chunk) =>
-      structured<{ jobs: StructuredPart[] }>({
+      structured<{ jobs: unknown }>({
         tool: "estruturar_vagas",
         description: "Vagas estruturadas e avaliadas contra o perfil.",
         system: `Para cada anúncio, extraia a estrutura completa da vaga e avalie contra o perfil da pessoa.
@@ -183,8 +188,9 @@ export async function structureJobs(
       }).then((r) => {
         chunksDone += 1;
         jobsDone += chunk.length;
-        onChunk?.(chunksDone, chunks.length, jobsDone, r.jobs);
-        return r.jobs;
+        const jobs = normalizeJobs(r.jobs);
+        onChunk?.(chunksDone, chunks.length, jobsDone, jobs);
+        return jobs;
       }),
     ),
   );
@@ -193,7 +199,7 @@ export async function structureJobs(
 
 /* ---------- 4. CV sob medida ---------- */
 export async function tailorCv(p: Partial<Profile>, job: StructuredJob, extras: string[]) {
-  return structured<CvContent>({
+  const out = await structured<unknown>({
     tool: "montar_cv",
     description: "CV adaptado para a vaga.",
     system: `Monte o CV mais assertivo possível para ESTA vaga, a partir do CV real da pessoa.
@@ -221,6 +227,7 @@ export async function tailorCv(p: Partial<Profile>, job: StructuredJob, extras: 
     },
     maxTokens: 6000,
   });
+  return normalizeCv(out);
 }
 
 /* ---------- 5. Copiloto ---------- */
@@ -231,7 +238,7 @@ export async function copilot(
   history: { role: "user" | "assistant"; content: string }[],
   message: string,
 ) {
-  return structured<{ text: string; options: ChatOption[] }>({
+  const out = await structured<{ text: unknown; options: unknown }>({
     tool: "responder",
     description: "Resposta do copiloto com até 3 versões de resposta.",
     system: `Você é o copiloto de candidatura. A pessoa vai te contar resultados, colar perguntas de recrutadores ou pedir ajuda.
@@ -260,11 +267,12 @@ export async function copilot(
       required: ["text", "options"],
     },
   });
+  return { text: toStr(out.text), options: normalizeOptions(out.options) };
 }
 
 /* ---------- 6. Aprendizados da reprovação ---------- */
 export async function rejectionLessons(p: Partial<Profile>, job: StructuredJob, reason: string, timeline: string) {
-  const out = await structured<{ lessons: string[] }>({
+  const out = await structured<{ lessons: unknown }>({
     tool: "aprendizados",
     description: "Aprendizados acionáveis a partir da reprovação.",
     system:
@@ -278,7 +286,7 @@ export async function rejectionLessons(p: Partial<Profile>, job: StructuredJob, 
     schema: { type: "object", properties: { lessons: strArr }, required: ["lessons"] },
     maxTokens: 1500,
   });
-  return out.lessons;
+  return toStrArr(out.lessons);
 }
 
 function jobText(j: StructuredJob) {
@@ -292,4 +300,50 @@ function jobText(j: StructuredJob) {
     `Pontos fortes do perfil: ${j.strengths.join("; ")}`,
     `Gaps: ${j.gaps.join("; ")}`,
   ].join("\n");
+}
+
+function normalizeJobs(v: unknown): StructuredPart[] {
+  let arr: unknown = v;
+  if (typeof arr === "string") {
+    try {
+      arr = JSON.parse(arr);
+    } catch {
+      arr = [];
+    }
+  }
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .filter((x) => x && typeof x === "object")
+    .map((x) => {
+      const j = x as Record<string, unknown>;
+      return {
+        id: toStr(j.id),
+        title: toStr(j.title),
+        company: toStr(j.company),
+        city: toStr(j.city),
+        mode: ["Presencial", "Híbrido", "Remoto"].includes(toStr(j.mode)) ? toStr(j.mode) : "Presencial",
+        posted: toStr(j.posted) || null,
+        salary: toStr(j.salary) || null,
+        match: toInt(j.match),
+        summary: toStr(j.summary),
+        resp: toStrArr(j.resp),
+        req: toStrArr(j.req),
+        dif: toStrArr(j.dif),
+        benef: toStrArr(j.benef),
+        keywords: toStrArr(j.keywords),
+        strengths: toStrArr(j.strengths),
+        gaps: toStrArr(j.gaps),
+      };
+    })
+    .filter((j) => j.id && j.title);
+}
+
+function safeJsonArray(v: unknown): Record<string, unknown>[] {
+  if (typeof v !== "string") return [];
+  try {
+    const parsed = JSON.parse(v);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }

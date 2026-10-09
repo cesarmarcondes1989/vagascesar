@@ -2,6 +2,7 @@ import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import { COLS, fmtDate, stageLabel } from "@/lib/constants";
 import type { AppEvent, Application, JobRow } from "@/lib/types";
+import { toStrArr } from "@/lib/normalize";
 
 export const dynamic = "force-dynamic";
 
@@ -97,7 +98,7 @@ export default async function MinhasVagas() {
               <span className="text-sm leading-relaxed text-warn-ink">{ev?.reason || "Sem justificativa registrada."}</span>
             </div>
             <ul className="m-0 flex flex-[2_1_360px] flex-col gap-1.5 pl-[18px] text-sm leading-relaxed">
-              {(ev?.lessons ?? []).map((l, i) => (
+              {toStrArr(ev?.lessons).map((l, i) => (
                 <li key={i}>{l}</li>
               ))}
             </ul>

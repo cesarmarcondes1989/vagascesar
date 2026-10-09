@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FLOW, QUICK_PROMPTS, STAGES, fmtDate, stageLabel } from "@/lib/constants";
 import type { AppEvent, Application, ChatMessage, CvVersion, JobRow } from "@/lib/types";
+import { normalizeCv } from "@/lib/normalize";
 
 type Props = { app: Application; job: JobRow; events: AppEvent[]; chat: ChatMessage[]; cv: CvVersion | null };
 type Tab = "cv" | "chat" | "status";
@@ -129,7 +130,7 @@ function CvTab({ app, job, initial, goChat }: { app: Application; job: JobRow; i
     const data = await res.json();
     setBusy(false);
     if (!res.ok) return setError(data.error ?? "Falha ao gerar o CV");
-    setCv(data.version);
+    setCv({ ...data.version, content: normalizeCv(data.version.content) });
   }
 
   if (!cv) {

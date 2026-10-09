@@ -286,7 +286,7 @@ export function BuscarClient({ roles: initialRoles, prefs, last, savedMap }: Pro
           <div className="flex max-w-[780px] flex-col gap-2.5">
             <span className="eyebrow">
               ETAPA 3 · VAGAS
-              {searchedAt ? ` · BUSCA DE ${new Date(searchedAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : ""}
+              {searchedAt ? ` · BUSCA DE ${new Date(searchedAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" })}` : ""}
             </span>
             <h2 className="h1 m-0">
               {busy === "search"
