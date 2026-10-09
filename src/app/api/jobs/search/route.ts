@@ -99,8 +99,11 @@ export async function POST(req: Request) {
         const toJob = (s: StructuredPart): StructuredJob | null => {
           const raw = rawById.get(s.id);
           if (!raw) return null;
+          // `id` is the SerpAPI job id echoed by the AI; keep it only as external_id, never as a row id.
+          const { id: _aiId, ...rest } = s;
+          void _aiId;
           const job: StructuredJob = {
-            ...s,
+            ...rest,
             external_id: raw.externalId,
             source: raw.source === "Outras" && raw.via ? raw.via : raw.source,
             url: raw.url,

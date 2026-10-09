@@ -9,8 +9,30 @@ export async function POST(req: Request) {
   const { supabase, user } = auth;
   const { job } = (await req.json()) as { job: StructuredJob };
 
-  const { demo: _demo, ...row } = job;
-  void _demo;
+  // Only known columns go to the DB. Older saved searches carry an `id` (SerpAPI's job id),
+  // which must never land in the uuid primary key.
+  const row = {
+    external_id: job.external_id,
+    title: job.title,
+    company: job.company,
+    city: job.city,
+    region: job.region,
+    mode: job.mode,
+    source: job.source,
+    posted: job.posted,
+    salary: job.salary,
+    url: job.url,
+    match: job.match,
+    summary: job.summary,
+    resp: job.resp ?? [],
+    req: job.req ?? [],
+    dif: job.dif ?? [],
+    benef: job.benef ?? [],
+    keywords: job.keywords ?? [],
+    strengths: job.strengths ?? [],
+    gaps: job.gaps ?? [],
+  };
+  if (!row.external_id || !row.title) return NextResponse.json({ error: "Vaga sem identificação" }, { status: 400 });
   const { data: jobRow, error: jobErr } = await supabase
     .from("jobs")
     .upsert({ ...row, user_id: user.id }, { onConflict: "user_id,external_id" })
