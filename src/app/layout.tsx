@@ -18,7 +18,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="pt-BR">
       <body className="min-h-screen antialiased">
-        <Header />
+        <Header gated={!!process.env.APP_PASSWORD} />
         <main className="mx-auto max-w-[1280px] px-4 pt-9 pb-28 md:px-6">{children}</main>
       </body>
     </html>

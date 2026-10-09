@@ -9,7 +9,6 @@ export const maxDuration = 120;
 
 export async function POST(req: Request) {
   const auth = await requireUser();
-  if ("error" in auth) return auth.error;
   const { supabase, user } = auth;
   const prefs = (await req.json()) as SearchPrefs;
 

@@ -9,7 +9,7 @@ const NAV = [
   { href: "/buscar", n: "2", label: "Buscar vagas" },
 ];
 
-export function Header() {
+export function Header({ gated }: { gated: boolean }) {
   const path = usePathname();
   if (path.startsWith("/login")) return null;
   const active = (href: string) => (href === "/" ? path === "/" || path.startsWith("/candidatura") : path.startsWith(href));
@@ -37,9 +37,18 @@ export function Header() {
             </Link>
           ))}
         </nav>
-        <form action="/auth/signout" method="post">
-          <button className="font-mono text-xs text-[#C9D6F2] underline-offset-4 hover:underline">sair</button>
-        </form>
+        {gated && (
+          <button
+            type="button"
+            className="font-mono text-xs text-[#C9D6F2] underline-offset-4 hover:underline"
+            onClick={async () => {
+              await fetch("/api/login", { method: "DELETE" });
+              window.location.href = "/login";
+            }}
+          >
+            sair
+          </button>
+        )}
       </div>
     </header>
   );

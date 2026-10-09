@@ -19,10 +19,8 @@ App pessoal para buscar vagas com IA, montar o CV sob medida para cada uma e aco
 ### 1. Supabase
 1. Crie um projeto em [supabase.com](https://supabase.com) (região São Paulo).
 2. **SQL Editor → New query**, cole `supabase/migrations/0001_init.sql` e rode.
-3. **Authentication → URL Configuration**:
-   - *Site URL*: a URL da Vercel (ex.: `https://vagascesar.vercel.app`)
-   - *Redirect URLs*: adicione `https://SUA-URL/auth/callback` e `http://localhost:3000/auth/callback`
-4. **Project Settings → API**: copie *Project URL* e *anon public key*.
+3. Rode também `supabase/migrations/0002_sem_login.sql` (o app não usa login do Supabase).
+4. **Project Settings → API**: copie *Project URL* e a chave *service_role* (secreta).
 
 ### 2. Chaves
 - Claude: [console.anthropic.com](https://console.anthropic.com) → API Keys
@@ -43,7 +41,8 @@ npm run dev
 
 ## Custos e limites
 - Cada busca faz até 8 consultas ao SerpAPI (`MAX_QUERIES_PER_SEARCH` em `src/lib/constants.ts`) e manda até 30 vagas para o Claude estruturar.
-- Login por magic link, restrito aos e-mails em `ALLOWED_EMAILS`. Todas as tabelas têm RLS por usuário.
+- Sem login. O banco só é acessado pelo servidor com a service role key; RLS fica ligado sem políticas, então a chave pública não lê nada.
+- Quem tiver a URL abre o app. Para fechar, defina `APP_PASSWORD` na Vercel (senha simples, sem e-mail).
 
 ## Fontes de vagas
 LinkedIn, Glassdoor e Indeed não oferecem API aberta e proíbem raspagem. O Google Jobs (via SerpAPI) agrega anúncios desses sites e de Gupy, Catho, Vagas.com etc., e cada vaga traz o link para candidatura no site original.

@@ -8,7 +8,6 @@ export const maxDuration = 60;
 /** Generates a new tailored CV version. */
 export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const auth = await requireUser();
-  if ("error" in auth) return auth.error;
   const { supabase, user } = auth;
   const { id } = await ctx.params;
 
@@ -32,7 +31,6 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 /** Adds an answer from the copilot to the CV extras. */
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const auth = await requireUser();
-  if ("error" in auth) return auth.error;
   const { supabase } = auth;
   const { id } = await ctx.params;
   const { text } = (await req.json()) as { text: string };

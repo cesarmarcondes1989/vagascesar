@@ -7,7 +7,6 @@ export const maxDuration = 60;
 
 export async function POST() {
   const auth = await requireUser();
-  if ("error" in auth) return auth.error;
   const { supabase, user } = auth;
 
   const profile = await getProfile(supabase, user.id);

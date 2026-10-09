@@ -3,7 +3,6 @@ import { requireUser } from "@/lib/supabase/server";
 
 export async function PUT(req: Request) {
   const auth = await requireUser();
-  if ("error" in auth) return auth.error;
   const { supabase, user } = auth;
   const body = (await req.json()) as { description?: string; levels?: string[] };
 

@@ -9,7 +9,6 @@ export const maxDuration = 60;
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const auth = await requireUser();
-  if ("error" in auth) return auth.error;
   const { supabase, user } = auth;
   const { id } = await ctx.params;
   const { message } = (await req.json()) as { message: string };
@@ -56,7 +55,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 /** Marks which of the 3 options the person picked. */
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const auth = await requireUser();
-  if ("error" in auth) return auth.error;
   const { supabase } = auth;
   const { id } = await ctx.params;
   const { messageId, chosen } = (await req.json()) as { messageId: string; chosen: number };

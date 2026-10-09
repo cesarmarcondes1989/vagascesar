@@ -1,46 +1,23 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { GATE_COOKIE, gateToken } from "@/lib/gate";
 
-const PUBLIC_PATHS = ["/login", "/auth", "/api/login"];
+const PUBLIC_PATHS = ["/login", "/api/login"];
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const password = process.env.APP_PASSWORD;
+  if (!password) return NextResponse.next(); // No gate configured: app is open.
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) {
-    // Env not configured yet: let /login render its setup notice.
-    if (request.nextUrl.pathname.startsWith("/login")) return response;
-    return NextResponse.redirect(new URL("/login", request.url));
+  if (PUBLIC_PATHS.some((p) => request.nextUrl.pathname.startsWith(p))) return NextResponse.next();
+
+  const cookie = request.cookies.get(GATE_COOKIE)?.value;
+  if (cookie && cookie === (await gateToken(password))) return NextResponse.next();
+
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.json({ error: "Senha necessária" }, { status: 401 });
   }
-
-  const supabase = createServerClient(url, key, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(list) {
-        list.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
-        list.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
-      },
-    },
-  });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const isPublic = PUBLIC_PATHS.some((p) => request.nextUrl.pathname.startsWith(p));
-  if (!user && !isPublic) {
-    if (request.nextUrl.pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
-    }
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-  return response;
+  return NextResponse.redirect(new URL("/login", request.url));
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff2?)$).*)"],
 };

@@ -1,25 +1,26 @@
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
+import { GATE_COOKIE, gateToken } from "@/lib/gate";
 
 export async function POST(req: Request) {
-  const { email } = (await req.json()) as { email?: string };
-  const clean = (email ?? "").trim().toLowerCase();
-  const allowed = (process.env.ALLOWED_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
+  const expected = process.env.APP_PASSWORD;
+  if (!expected) return NextResponse.json({ ok: true });
 
-  if (!clean) return NextResponse.json({ error: "Informe o e-mail" }, { status: 400 });
-  if (allowed.length && !allowed.includes(clean)) {
-    return NextResponse.json({ error: "Este e-mail não tem acesso a este app." }, { status: 403 });
-  }
+  const { password } = (await req.json()) as { password?: string };
+  if (password !== expected) return NextResponse.json({ error: "Senha errada." }, { status: 401 });
 
-  const origin = new URL(req.url).origin;
-  const supabase = await supabaseServer();
-  const { error } = await supabase.auth.signInWithOtp({
-    email: clean,
-    options: { emailRedirectTo: `${origin}/auth/callback` },
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set(GATE_COOKIE, await gateToken(expected), {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 180,
   });
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  return NextResponse.json({ ok: true });
+  return res;
+}
+
+export async function DELETE() {
+  const res = NextResponse.json({ ok: true });
+  res.cookies.delete(GATE_COOKIE);
+  return res;
 }

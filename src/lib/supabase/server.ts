@@ -1,33 +1,26 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
+/**
+ * Single-user app, no login: every row belongs to OWNER_ID and the server talks to
+ * Supabase with the service role key (bypasses RLS). The key never reaches the browser,
+ * and RLS stays on, so the public anon key cannot read anything.
+ */
+export const OWNER_ID = process.env.OWNER_ID || "00000000-0000-0000-0000-000000000001";
+
+let _client: SupabaseClient | null = null;
 
 export async function supabaseServer() {
-  const cookieStore = await cookies();
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(list) {
-        try {
-          list.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
-        } catch {
-          // Called from a Server Component: cookies are read-only there; middleware refreshes them.
-        }
-      },
-    },
-  });
+  if (!_client) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) throw new Error("Configure NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY na Vercel.");
+    _client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  }
+  return _client;
 }
 
-/** For route handlers: returns the client and the signed-in user, or a 401 response. */
+/** Kept with the same shape the routes already use. */
 export async function requireUser() {
   const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { error: NextResponse.json({ error: "Não autenticado" }, { status: 401 }) } as const;
-  }
-  return { supabase, user } as const;
+  return { supabase, user: { id: OWNER_ID } } as const;
 }

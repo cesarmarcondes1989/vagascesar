@@ -10,12 +10,12 @@ App pessoal (single-user) do Cesar: busca vagas com IA, gera CV sob medida, copi
 ## Arquitetura
 - `src/app/page.tsx`: **Minhas vagas** (tela inicial, kanban + reprovações). Server component.
 - `src/app/perfil`, `src/app/buscar`, `src/app/candidatura/[id]`: página server (carrega do Supabase) + `*Client.tsx` (interação).
-- `src/app/api/**`: route handlers. Todos usam `requireUser()` de `src/lib/supabase/server.ts`.
+- `src/app/api/**`: route handlers. Todos usam `requireUser()` de `src/lib/supabase/server.ts`, que devolve o client com service role e o dono fixo `OWNER_ID` (app single-user, **sem login**).
 - `src/lib/ai.ts`: **todas** as chamadas ao Claude. Padrão: `structured()` força uma tool call e devolve JSON tipado. Modelo via `ANTHROPIC_MODEL` (default `claude-sonnet-5-5`). PDF do CV vai como bloco `document` base64.
 - `src/lib/jobs-source.ts`: SerpAPI Google Jobs. Sem `SERPAPI_KEY` → vagas demo. Consultas = cargos × locais, limitadas por `MAX_QUERIES_PER_SEARCH`.
 - `src/lib/constants.ts`: regiões de SP e cidades, fontes, fases (`STAGES`, `FLOW`, `COLS`).
-- `src/middleware.ts`: refresh de sessão Supabase + redireciona não logados para `/login`.
-- `supabase/migrations/`: schema. Tabelas: `profiles`, `jobs`, `applications`, `application_events`, `cv_versions`, `chat_messages`. RLS `user_id = auth.uid()` em todas. **Mudou schema? Crie nova migration numerada**, não edite a 0001.
+- `src/middleware.ts`: só ativa se `APP_PASSWORD` existir: senha simples via cookie (`src/lib/gate.ts`). Sem Supabase Auth (o magic link estourava o limite de e-mails).
+- `supabase/migrations/`: schema. Tabelas: `profiles`, `jobs`, `applications`, `application_events`, `cv_versions`, `chat_messages`. RLS ligado sem políticas (acesso só via service role no servidor); `user_id` = `OWNER_ID`. **Mudou schema? Crie nova migration numerada**, não edite a 0001.
 
 ## Design
 - Paleta azul, **sem preto** (pedido explícito): tokens em `src/app/globals.css` (`brand` #1D4ED8, `brand-deep` #1E3A8A, `ink` #0F1E3D só para texto). Laranja (`warn`) só para alertas: reprovação, gaps, "aposta ousada".

@@ -9,7 +9,6 @@ export const maxDuration = 60;
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const auth = await requireUser();
-  if ("error" in auth) return auth.error;
   const { supabase, user } = auth;
   const { id } = await ctx.params;
   const body = (await req.json()) as { stage: string; customStage?: string; date?: string; note?: string; reason?: string };

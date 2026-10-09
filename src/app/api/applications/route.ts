@@ -6,7 +6,6 @@ import type { StructuredJob } from "@/lib/types";
 /** Saves a job from the search and starts its application (stage = salva). */
 export async function POST(req: Request) {
   const auth = await requireUser();
-  if ("error" in auth) return auth.error;
   const { supabase, user } = auth;
   const { job } = (await req.json()) as { job: StructuredJob };
 
